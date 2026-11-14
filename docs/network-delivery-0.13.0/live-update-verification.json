@@ -1,0 +1,68 @@
+{
+  "version": "0.13.0",
+  "passed": true,
+  "installerExecuted": false,
+  "campusAuthenticationStarted": false,
+  "nativeUiChecks": "blocked: Windows locked",
+  "startedAt": "2026-11-14T16:57:43.066344+00:00",
+  "ordinaryUser": true,
+  "probes": {
+    "check": {
+      "passed": true,
+      "elevationObserved": true,
+      "elevated": false,
+      "phase": 2,
+      "error": 0,
+      "downloadRequested": false,
+      "installerExecuted": false
+    },
+    "download": {
+      "passed": true,
+      "elevationObserved": true,
+      "elevated": false,
+      "phase": 5,
+      "error": 0,
+      "downloadRequested": true,
+      "installerExecuted": false
+    }
+  },
+  "manifestSignatureVerifiedByNativeClient": true,
+  "downloadedInstallerSha256": "f899d8ad1a90522bda950d31cfcb1047a21b7fe371c8d0389fee0b0ffd371085",
+  "downloadedInstallerBytes": 58275942,
+  "originalProcessUnchanged": true,
+  "originalApplicationAndConfigurationUnchanged": true,
+  "boundEthernetInternet": true,
+  "completedAt": "2026-11-14T16:58:13.103092+00:00",
+  "releaseSourceCommit": "cebcf1d4bad91728b05fa08301b462e16619247f",
+  "releaseUrl": "https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.13.0-preview",
+  "cloudChecks": {
+    "passed": true,
+    "ctestPassed": 35,
+    "url": "https://github.com/Hubujiu/SCAU-Link/actions/runs/43617638109",
+    "sourceCommit": "cebcf1d4bad91728b05fa08301b462e16619247f"
+  },
+  "localChecks": {
+    "ctestPassed": 35,
+    "updatesChecksPassed": 85,
+    "installerIntegrationPassed": true
+  },
+  "publicSourceAudit": {
+    "passed": true,
+    "stagedFiles": 370,
+    "publicSyntheticTlsFixtureExcluded": true,
+    "publisherPrivateIdentityAbsent": true
+  },
+  "releaseArtifactAudit": {
+    "passed": true,
+    "version": "0.13.0",
+    "manifestSignatureVerified": true,
+    "installerSha256": "f899d8ad1a90522bda950d31cfcb1047a21b7fe371c8d0389fee0b0ffd371085",
+    "installerBytes": 58275942,
+    "privateKeyAndPrivatePathsAbsent": true,
+    "archivesScanned": {
+      "scau-link-0.13.0-win-x64-preview.zip": 291,
+      "source.zip": 277
+    }
+  },
+  "packagedVerificationRemainsPrepublication": true
+}
