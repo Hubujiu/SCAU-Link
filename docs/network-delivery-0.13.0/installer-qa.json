@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "testOnlyInstallerIdentity": true,
+  "unicodeAndSpaceDirectory": true,
+  "realCredentialsRead": false,
+  "productionInstalledVersionReplaced": false,
+  "ordinaryUser": true,
+  "parentExitRequired": true,
+  "installerExitCode": 0,
+  "installedApplicationHashes": {
+    "SCAU-Link.exe": "764afc530a88c3641d29dbfbb52d6c200632944c69cf6bdf434ffbce02c6465e",
+    "scau-auth.exe": "615df8d16fb23c4815846fa13312694e59043fb966bf19b81693bc9d5f769245",
+    "scau-update.exe": "0a6fe0c5f3edba09703ebc7076c4cf104b36537284996ddb1e32cfd39b0fc775"
+  },
+  "allThreeApplicationsVerified": true,
+  "silentRestartDidNotCreateSecondConnection": true,
+  "uninstallExitCode": 0,
+  "qaInstallationRemoved": true,
+  "originalProcessUnchanged": true,
+  "accountCatalogUnchanged": true,
+  "settingsUnchanged": true,
+  "boundEthernetInternet": true
+}

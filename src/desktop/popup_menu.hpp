@@ -54,5 +54,6 @@ class NativeMenu {
               std::function<void()> closed = {});
     void close(bool restore_focus = false);
     bool filter(const MSG &);
+    bool visible() const noexcept { return visible_; }
 };
 } // namespace scau::desktop

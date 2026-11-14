@@ -1,0 +1,67 @@
+{
+  "product": "SCAU Link",
+  "version": "0.13.0",
+  "releaseChannel": "preview",
+  "previewReason": "更新模块已通过离线检查，原生新交互尚未完成点击验证；其他电脑、实际 Windows 重启及长时稳定性仍待验证",
+  "platform": "Windows x64",
+  "implementation": "C++20 / Win32 / Direct2D / DirectWrite / WLAN and EAP / WinHTTP / static OpenSSL 3.5.9",
+  "change": "GitHub public repository and Releases distribution; signed idle/manual update workflow with no forced campus disconnect.",
+  "desktopSha256": "764afc530a88c3641d29dbfbb52d6c200632944c69cf6bdf434ffbce02c6465e",
+  "authenticationSha256": "615df8d16fb23c4815846fa13312694e59043fb966bf19b81693bc9d5f769245",
+  "updaterSha256": "0a6fe0c5f3edba09703ebc7076c4cf104b36537284996ddb1e32cfd39b0fc775",
+  "automatedTests": {
+    "passed": 35,
+    "total": 35,
+    "evidence": "test-results.txt",
+    "updatesChecks": 85,
+    "scope": "Complete Release CTest; real held-parent/helper handoff and success/failure installer fixtures included."
+  },
+  "nativeUiChecks": {
+    "status": "blocked",
+    "reason": "Windows returned failed to activate captured window; accessibility readable but foreground inputs unavailable. No screenshot was attributed as a passed check.",
+    "passed": 0,
+    "total": 0,
+    "executedOnThisBuild": 0,
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "update": {
+    "idleSeconds": 120,
+    "checkIntervalHours": 6,
+    "autoDownload": true,
+    "autoInstallRequiresDisconnected": true,
+    "manualInSettings": true,
+    "signature": "Ed25519",
+    "installerDigest": "SHA-256",
+    "forcedProcessTermination": false,
+    "schoolCredentialsSentToGitHub": false
+  },
+  "authenticationEvidence": {
+    "exactSameCoreAs0120": true,
+    "sha256": "615df8d16fb23c4815846fa13312694e59043fb966bf19b81693bc9d5f769245",
+    "report": "source/docs/Network-Delivery-Results-0.12.0.md",
+    "retestedThisRound": false
+  },
+  "installerIntegration": {
+    "status": "passed",
+    "testUsesSeparateApplicationId": true,
+    "ordinaryUser": true,
+    "unicodeAndSpacePath": true,
+    "allThreeApplicationsVerified": true,
+    "originalNetworkAndConfigurationUnchanged": true,
+    "evidence": "source/docs/network-delivery-0.13.0/installer-qa.json"
+  },
+  "publicReleaseProbe": {
+    "status": "after publication",
+    "asset": "SCAU-Link-0.13.0-live-update-verification.json"
+  },
+  "notVerified": [
+    "Actual Windows reboot, long-duration stability, roaming, sleep/resume and hotplug.",
+    "Other computers, Windows versions or campus access points.",
+    "Real password changes, campus pause/resume mutations and working device details when school reports query failure.",
+    "Complete live SAM extension round trip this round.",
+    "Live RSA-encrypted Portal branch; observed metadata required no RSA.",
+    "New native update button click verification: Windows locked and foreground activation unavailable. Existing UI evidence belongs to 0.12.0."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}

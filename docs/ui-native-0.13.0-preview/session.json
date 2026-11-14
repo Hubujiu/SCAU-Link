@@ -1,0 +1,5 @@
+{
+  "status": "blocked",
+  "reason": "Windows returned failed to activate captured window; accessibility readable but foreground inputs unavailable. No screenshot was attributed as a passed check.",
+  "desktopSha256": "764afc530a88c3641d29dbfbb52d6c200632944c69cf6bdf434ffbce02c6465e"
+}

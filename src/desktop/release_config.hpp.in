@@ -1,0 +1,9 @@
+#pragma once
+namespace scau::desktop::updates {
+inline constexpr wchar_t current_version[] = L"@PROJECT_VERSION@";
+inline constexpr char current_version_utf8[] = "@PROJECT_VERSION@";
+inline constexpr bool preview_channel = true;
+inline constexpr wchar_t repository[] = L"Hubujiu/SCAU-Link";
+inline constexpr wchar_t repository_url[] = L"https://github.com/Hubujiu/SCAU-Link";
+inline constexpr char signing_public_key[] = "@SCAU_UPDATE_PUBLIC_KEY@";
+}

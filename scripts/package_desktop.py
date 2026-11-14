@@ -45,7 +45,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-for name in ['SCAU-Link.exe', 'scau-auth.exe']:
+for name in ['SCAU-Link.exe', 'scau-auth.exe', 'scau-update.exe']:
     assert sha(stage / name) == sha(root / 'build/Release' / name), f'Stale executable: {name}'
 binary = (stage / 'SCAU-Link.exe').read_bytes()
 pe = struct.unpack_from('<I', binary, 0x3c)[0]
@@ -81,6 +81,10 @@ source_files.extend(root / 'docs' / name for name in [
 source_files.extend(p for p in (root / 'docs' / f'network-delivery-{version}').rglob('*')
                     if p.is_file() and p.suffix.lower() in {'.json', '.jsonl', '.txt'})
 source_files.extend(p for p in proof.iterdir() if p.is_file())
+source_files.extend(root / 'docs' / name for name in ['Updates-0.13.0.md',
+    'SCAU-First-Run-0.12.0.md','Network-Delivery-Results-0.12.0.md','validation-0.12.0.json'])
+source_files.extend(p for p in (root/'docs/network-delivery-0.12.0').rglob('*')
+                    if p.is_file() and p.suffix.lower() in {'.json','.jsonl','.txt'})
 for path in source_files:
     target = stage / 'source' / path.relative_to(root)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -94,7 +98,7 @@ for path in source_files:
     'checksum-pinned portable Perl build tool on the first run. Static TLS libraries '
     'are built locally in build/deps; Perl is not installed system-wide or used at runtime. '
     'Source provenance and licensing are in third_party/openssl.\n\n'
-    'Keep the resulting SCAU-Link.exe and scau-auth.exe together. '
+    'Keep SCAU-Link.exe, scau-auth.exe and scau-update.exe together. '
     'The native UI uses Win32, Direct2D and DirectWrite; no web runtime is needed. '
     'Vector icon paths are compiled from src/desktop/icons.hpp. '
     'Optional icon regeneration uses scripts/generate_native_icons.py and Python fontTools. '

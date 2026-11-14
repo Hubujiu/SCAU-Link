@@ -112,6 +112,10 @@ def source_archive(target):
     files.extend(p for p in (ROOT/'docs'/f'network-delivery-{version}').rglob('*')
                  if p.is_file() and p.suffix.lower() in {'.json','.jsonl','.txt'})
     files.extend(p for p in (ROOT/'docs'/f'ui-native-{version}-preview').iterdir() if p.is_file())
+    files.extend(ROOT/'docs'/p for p in ['Updates-0.13.0.md','SCAU-First-Run-0.12.0.md',
+        'Network-Delivery-Results-0.12.0.md','validation-0.12.0.json'])
+    files.extend(p for p in (ROOT/'docs/network-delivery-0.12.0').rglob('*')
+                 if p.is_file() and p.suffix.lower() in {'.json','.jsonl','.txt'})
     with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for p in sorted(set(files)):
             assert p.is_relative_to(ROOT) and p.suffix.lower() not in {'.pcap','.pcapng','.scau'}
@@ -126,7 +130,6 @@ def main():
     parser.add_argument('--test', action='store_true', help='Build an isolated QA variant, not a user release.')
     parser.add_argument('--preview', action='store_true', help='Package an explicitly labelled preview with incomplete UI validation.')
     args = parser.parse_args()
-    if args.test and args.preview: parser.error('--test and --preview are separate variants')
     version = re.search(r'project\(ScauNativeAuth VERSION ([\d.]+)',
                         (ROOT/'CMakeLists.txt').read_text(encoding='utf-8')).group(1)
     variant = '-preview' if args.preview else ''
@@ -138,7 +141,8 @@ def main():
     payload = ROOT/'build'/('installer-payload'+variant)
     payload.mkdir(parents=True, exist_ok=True)
     hashes = {}
-    for name,key in [('SCAU-Link.exe','desktopSha256'), ('scau-auth.exe','authenticationSha256')]:
+    for name,key in [('SCAU-Link.exe','desktopSha256'), ('scau-auth.exe','authenticationSha256'),
+                     ('scau-update.exe','updaterSha256')]:
         path = stage/name
         digest = sha(path)
         if digest != report[key] or digest != sha(ROOT/'build/Release'/name):
@@ -147,7 +151,7 @@ def main():
         hashes[name] = digest
     runtime = collect_runtime(payload/'runtime')
     shutil.copy2(stage/'verification.json',payload/'verification.json')
-    if not args.test or not (payload/'source.zip').exists(): source_archive(payload/'source.zip')
+    source_archive(payload/'source.zip')
     exe = compiler()
     command = [str(exe), '/Qp', '/DAppVersion='+version, '/DRepoRoot='+str(ROOT),
                '/DPayloadDir='+str(payload), '/DOutputDir='+str(ROOT/'out')]

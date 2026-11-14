@@ -4,6 +4,8 @@
 #include "list_scrollbar.hpp"
 #include "spring.hpp"
 #include "visual.hpp"
+#include "updates.hpp"
+#include "release_config.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -25,7 +27,7 @@ namespace {
 constexpr wchar_t root_class[] = L"ScauLink.Native.Window", page_class[] = L"ScauLink.Native.Page";
 constexpr UINT tray_message = WM_APP + 21, show_message = WM_APP + 22;
 constexpr UINT_PTR animation_timer = 1, uptime_timer = 2, exit_timer = 3, progress_timer = 4, search_timer = 5,
-                   package_timer = 6;
+                   package_timer = 6, update_timer = 7;
 constexpr int account_row_height = 84, account_row_gap = 12;
 constexpr float account_row_radius = 9.f;
 enum PageId { Home, Account, Preferences, Logs, PageCount };
@@ -80,6 +82,8 @@ enum Id {
     StartupMode1,
     StartupMode2,
     StartupMode3,
+    CheckUpdate,
+    UpdateStatus,
     LogList = 180,
     RefreshLogs,
     LogsMessage,
@@ -168,6 +172,9 @@ class App {
     ConnectionMode active_mode = ConnectionMode::Wired;
     bool force_silent = false;
     std::unique_ptr<Backend> backend;
+    std::unique_ptr<updates::Manager> updater;
+    updates::Snapshot update_snapshot;
+    bool demo_update_available = false, demo_update_ready = false, demo_update_live = false;
     Settings settings{};
     Status status = Status::Loading;
     bool initialized = false, credentials = false, quiet = true, exiting = false,
@@ -209,6 +216,67 @@ class App {
     POINT window_destination{};
     RECT full_bounds{};
     bool full_bounds_saved = false;
+    bool update_installing() const {
+        return update_snapshot.phase == updates::Phase::Starting || update_snapshot.phase == updates::Phase::InstallQueued;
+    }
+    bool update_can_install(bool idle) const {
+        const bool running = !initialized || !backend || backend->running() || connected_or_busy(status) || status == Status::Stopping;
+        const bool busy = account_editor || account_service || password_view || campus_busy || password_busy ||
+            campus_confirming || pending_credential || pending_settings || account_pointer.active() || popup.visible() || exiting;
+        return updates::can_install(running,busy,idle);
+    }
+    void refresh_update_controls() {
+        using updates::Phase;
+        std::wstring caption=L"检查更新", state=updates::current_version;
+        bool enabled=initialized && (updater || options.demo);
+        switch(update_snapshot.phase) {
+        case Phase::Checking: caption=L"检查中";state+=L" · 正在检查";enabled=false;break;
+        case Phase::Current: state+=L" · 已是最新版";break;
+        case Phase::Available: caption=L"下载更新";state=L"可更新至 "+update_snapshot.version;break;
+        case Phase::Downloading:
+            caption=L"下载 "+std::to_wstring(update_snapshot.progress)+L"%";
+            state=L"正在下载 "+update_snapshot.version;enabled=false;break;
+        case Phase::Ready:
+            caption=L"安装并重启";state=L"已下载 "+update_snapshot.version;
+            enabled=update_can_install(true) && !demo_update_live;
+            if(!enabled)state+=L" · 断开后安装";
+            break;
+        case Phase::Starting: case Phase::InstallQueued: caption=L"准备安装";enabled=false;break;
+        case Phase::Failed: state+=L" · 更新失败（"+std::to_wstring(update_snapshot.error)+L"）";break;
+        default:break;
+        }
+        text(Preferences,CheckUpdate,caption);text(Preferences,UpdateStatus,state);
+        if(auto button=ctrl(Preferences,CheckUpdate))EnableWindow(button,enabled);
+        if(pages[Preferences].window)InvalidateRect(pages[Preferences].window,nullptr,FALSE);
+    }
+    void update_changed() {
+        if(updater)update_snapshot=updater->snapshot();
+        refresh_update_controls();
+        if(update_snapshot.phase==updates::Phase::InstallQueued && !exiting)exit();
+    }
+    void update_tick() {
+        if(!updater||!initialized||exiting||options.demo)return;
+        const bool idle=updates::system_idle();
+        updater->tick(idle);
+        if(update_snapshot.phase==updates::Phase::Ready && update_can_install(idle)) {
+            if(updater->install_now())update_changed();
+        }
+    }
+    void update_clicked() {
+        using updates::Phase;
+        if(options.demo && !demo_update_live) {
+            if(update_snapshot.phase==Phase::Available)update_snapshot={Phase::Ready,L"0.14.0",100,0};
+            else if(update_snapshot.phase!=Phase::Ready)
+                update_snapshot=demo_update_available ? updates::Snapshot{Phase::Available,L"0.14.0",0,0} : updates::Snapshot{Phase::Current};
+            refresh_update_controls();return;
+        }
+        if(!updater)return;
+        if(update_snapshot.phase==Phase::Available)updater->download_now();
+        else if(update_snapshot.phase==Phase::Ready) {
+            if(!options.demo && update_can_install(true))updater->install_now();
+        } else updater->check_now();
+        update_changed();
+    }
     const PackageInfo& package_for(const std::string& id) const {
         static const PackageInfo missing;
         const auto* account = account_catalog.find(id);
@@ -871,6 +939,8 @@ class App {
             }
         } else if (id == Preferences) {
             label(p, L"设置", Heading, Title);
+            button(p,L"检查更新",CheckUpdate);
+            label(p,updates::current_version,UpdateStatus,Small);
             make_control(p.window, p.controls, L"BUTTON", L"小窗模式", MiniToggle,
                          WS_TABSTOP | BS_AUTOCHECKBOX);
             label(p, L"启动方式", StartupHeading, Medium);
@@ -1008,6 +1078,7 @@ class App {
             }
             if (controls_moving())
                 start_animation();
+            refresh_update_controls();
         }
     }
     void layout_page(PageId id, int width, int height) {
@@ -1113,7 +1184,9 @@ class App {
             put(CampusMessage, {left, campus_confirming ? 393 : 330, field, 40}, service && !campus_message.empty());
             put(Progress, {left, campus_confirming ? 442 : 364, field, 3}, service && campus_busy);
         } else if (id == Preferences) {
-            put(Heading, {0, 0, width, 38}, !settings.mini);
+            put(Heading, {0, 0, width-170, 38}, !settings.mini);
+            put(CheckUpdate,{width-150,2,150,34},!settings.mini);
+            put(UpdateStatus,{0,42,width,24},!settings.mini);
             put(MiniToggle, {16, 90, width - 32, 48}, !settings.mini);
             put(StartupHeading, {0, 180, width, 28}, !settings.mini);
             put(AutoStartToggle, {16, 232, width - 32, 48}, !settings.mini);
@@ -1697,6 +1770,7 @@ class App {
             DestroyWindow(window);
     }
     void command(int id) {
+        if(update_installing() && id!=WindowMinimize && id!=WindowClose)return;
         if (id >= NavHome && id <= NavLogs) {
             if (id == NavAccount && !settings.mini && account_editor)
                 close_account_editor();
@@ -1706,6 +1780,9 @@ class App {
             return;
         }
         switch (id) {
+        case CheckUpdate:
+            update_clicked();
+            break;
         case ChangePasswordMenu:
             open_password_view(form_account_id);
             break;
@@ -1974,6 +2051,22 @@ class App {
         update_tray(true);
         backend = std::make_unique<Backend>(window, options);
         backend->initialize();
+        if(options.demo && !demo_update_live) {
+            if(demo_update_ready)update_snapshot={updates::Phase::Ready,L"0.14.0",100,0};
+        } else {
+            try {
+                updates::Options update_options;
+                update_options.directory=data_directory()/(demo_update_live?L"update-demo":L"updates");
+                update_options.installation=executable_path().parent_path();
+                update_options.current=updates::current_version;
+                update_options.allow_preview=updates::preview_channel;
+                update_options.public_key=updates::signing_public_key;
+                update_options.restart_silent=force_silent;
+                update_options.changed=[target=window]{PostMessageW(target,updates::changed_message,0,0);};
+                updater=std::make_unique<updates::Manager>(std::move(update_options));
+                SetTimer(window,update_timer,10000,nullptr);
+            }catch(...){update_snapshot.phase=updates::Phase::Failed;update_snapshot.error=ERROR_ACCESS_DENIED;}
+        }
         MSG msg{};
         while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
             if (popup.filter(msg))
@@ -2033,6 +2126,7 @@ class App {
                 DispatchMessageW(&msg);
             }
         }
+        updater.reset();
         backend.reset();
         while (PeekMessageW(&msg, nullptr, backend_message, backend_message, PM_REMOVE))
             delete reinterpret_cast<Event *>(msg.lParam);
@@ -2378,7 +2472,7 @@ void App::draw_item(const DRAWITEMSTRUCT &item) {
                 : id == SaveCredential ? (connect_after_save() ? Icon::ArrowRight : Icon::Check)
                 : id == AddAccount     ? Icon::Plus
                 : id == ExitMini       ? Icon::Panel
-                : id == RefreshLogs || id == CampusRefresh ? Icon::Refresh
+                : id == RefreshLogs || id == CampusRefresh || id == CheckUpdate ? Icon::Refresh
                 : id == CampusActionButton ? Icon::Power
                 : id == SubmitPasswordChange ? Icon::Key
                 : id == PortalAccept ? Icon::Check
@@ -2442,7 +2536,7 @@ void App::paint_root() {
             renderer.line(24, h - 66, 160, h - 66, Line);
             renderer.dot(27, h - 39, 2.5f, status == Status::Online ? RGB(88, 144, 108) : Subtle);
             renderer.text(status_text(status, credentials), {36, h - 50, 94, 22}, Muted, SmallText);
-            renderer.text(L"0.12.0", {123, h - 50, 46, 22}, Subtle, SmallText);
+            renderer.text(updates::current_version, {123, h - 50, 46, 22}, Subtle, SmallText);
         }
         if (!IsZoomed(window))
             renderer.outline({.5f, .5f, w - 1, h - 1}, RGB(203, 215, 200), settings.mini ? 10.f : 8.f);
@@ -2556,6 +2650,10 @@ void App::paint_page(Page &p) {
                 }
             }
         } else if (p.id == Preferences && !settings.mini) {
+            if(update_snapshot.phase==updates::Phase::Downloading) {
+                renderer.fill({0,70,w,3},Soft,1.5f);
+                renderer.fill({0,70,w*update_snapshot.progress/100.f,3},Pine,1.5f);
+            }
             for (Rect r : {Rect{0, 76, w, 76}, Rect{0, 226, w, settings.startup_modes.size()>=2 ? 266.f : !settings.startup_modes.empty() ? 220.f : 174.f}}) {
                 renderer.fill(r, White, 9);
                 renderer.outline(r.inset(.5f), Line, 8.5f);
@@ -2853,6 +2951,9 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
     case backend_message:
         app->received(std::unique_ptr<Event>(reinterpret_cast<Event *>(l)));
         return 0;
+    case updates::changed_message:
+        app->update_changed();
+        return 0;
     case show_message:
         if (app->initialized && !app->settings.silent)
             app->show(Home);
@@ -2920,6 +3021,8 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             app->update_uptime();
         else if (w == package_timer)
             app->request_visible_packages();
+        else if (w == update_timer)
+            app->update_tick();
         else if (w == exit_timer && !app->backend->running())
             DestroyWindow(h);
         else if (w == progress_timer) {
@@ -2975,6 +3078,7 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         KillTimer(h, progress_timer);
         KillTimer(h, search_timer);
         KillTimer(h, package_timer);
+        KillTimer(h, update_timer);
         NOTIFYICONDATAW n{sizeof(n)};
         n.hWnd = h;
         n.uID = 1;
@@ -3033,6 +3137,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         } else if (argument == L"--demo-failover") {
             app.options.demo = true;
             app.options.demo_failover = true;
+        } else if (argument == L"--demo-update") {
+            app.options.demo=true;app.demo_update_available=true;
+        } else if (argument == L"--demo-update-ready") {
+            app.options.demo=true;app.demo_update_ready=true;
+        } else if (argument == L"--demo-update-live") {
+            app.options.demo=true;app.demo_update_live=true;
         } else if (argument == L"--mini")
             app.options.mini = true;
         else if (argument == L"--silent")

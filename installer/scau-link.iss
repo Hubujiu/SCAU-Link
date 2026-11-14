@@ -86,6 +86,7 @@ Name: "desktop"; Description: "桌面快捷方式"; GroupDescription: "快捷方
 [Files]
 Source: "{#PayloadDir}\SCAU-Link.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\scau-auth.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PayloadDir}\scau-update.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\runtime\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\runtime\manifest.json"; DestDir: "{app}\docs"; DestName: "runtime-manifest.json"; Flags: ignoreversion
 Source: "{#PayloadDir}\source.zip"; DestDir: "{app}\docs"; Flags: ignoreversion
