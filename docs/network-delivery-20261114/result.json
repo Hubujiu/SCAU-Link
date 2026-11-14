@@ -1,0 +1,42 @@
+{
+  "ended_at": "2026-11-14T12:01:13.023+00:00",
+  "restored": true,
+  "test_passed": true,
+  "cases": [
+    {
+      "mode": 0,
+      "phase": "wired",
+      "status": "passed",
+      "started_at": "2026-11-14T11:56:35.407+00:00",
+      "authentication": true,
+      "internet": true,
+      "crash_recovery": true,
+      "observation": true,
+      "disconnect": true,
+      "observation_probes": 10,
+      "ended_at": "2026-11-14T11:58:48.708+00:00",
+      "passed": true
+    },
+    {
+      "mode": 2,
+      "phase": "wireless_8021x",
+      "status": "passed",
+      "started_at": "2026-11-14T11:58:48.716+00:00",
+      "authentication": true,
+      "internet": true,
+      "crash_recovery": true,
+      "observation": true,
+      "disconnect": true,
+      "observation_probes": 10,
+      "owned_profile_cleanup": true,
+      "ended_at": "2026-11-14T12:01:06.021+00:00",
+      "passed": true
+    }
+  ],
+  "not_tested_live": [
+    "password_change",
+    "campus_pause_resume",
+    "web_portal",
+    "long_duration_roaming_sleep_resume"
+  ]
+}

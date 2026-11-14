@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "mode": "isolated native demo",
+  "desktopSha256": "eb13af07302b17204a78bfa9d4093f64669f10c594c0443e514f4e62019ad0d6",
+  "checks": [
+    {
+      "name": "Default startup follows last selected mode",
+      "passed": true
+    },
+    {
+      "name": "Native rounded popup supports keyboard navigation and disabled duplicate choices",
+      "passed": true
+    },
+    {
+      "name": "Selecting primary 1x progressively reveals a backup selector",
+      "passed": true
+    },
+    {
+      "name": "Selecting Web as backup preserves order and reveals third optional slot",
+      "passed": true
+    },
+    {
+      "name": "Mini mode shows only the connection action and settings entry",
+      "passed": true
+    },
+    {
+      "name": "Mini settings shows only exit mini mode",
+      "passed": true
+    },
+    {
+      "name": "Mini remains horizontally centered on the original window",
+      "passed": true
+    }
+  ],
+  "note": "Only the recorded startup/mini interactions were rechecked; other UI flows are not claimed as rerun."
+}

@@ -1,0 +1,6 @@
+{"time":"2026-11-14T15:43:16.681+00:00","event":"temporary_wireless_dhcp_enabled"}
+{"time":"2026-11-14T15:43:32.614+00:00","event":"connectivity_probe","phase":"native_credential_probe","ok":true,"interface":16,"interface_bound":true,"adapter_state":"Up","ip_state":"Connected","dhcp":"Enabled","configured_dhcp":1,"preferred_ipv4":true,"dns_count":1,"dns_direct":true,"http_verified":true,"duration_ms":2153}
+{"time":"2026-11-14T15:43:44.505+00:00","event":"connectivity_probe","phase":"native_worker_recovery","ok":true,"interface":16,"interface_bound":true,"adapter_state":"Up","ip_state":"Connected","dhcp":"Enabled","configured_dhcp":1,"preferred_ipv4":true,"dns_count":1,"dns_direct":true,"http_verified":true,"duration_ms":4209}
+{"time":"2026-11-14T15:44:15.544+00:00","event":"restore_started","reason":"controller_finally"}
+{"time":"2026-11-14T15:44:22.209+00:00","event":"connectivity_probe","phase":"rollback","ok":true,"interface":21,"interface_bound":true,"adapter_state":"Up","ip_state":"Connected","dhcp":"Enabled","configured_dhcp":1,"preferred_ipv4":true,"dns_count":1,"dns_direct":true,"http_verified":true,"duration_ms":1494}
+{"time":"2026-11-14T15:44:22.228+00:00","event":"restore_finished","ok":true}

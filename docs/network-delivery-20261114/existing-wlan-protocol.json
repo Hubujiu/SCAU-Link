@@ -1,0 +1,84 @@
+{
+  "protocol": [
+    {
+      "field": "authentication",
+      "value": "WPA2"
+    },
+    {
+      "field": "encryption",
+      "value": "AES"
+    },
+    {
+      "field": "useOneX",
+      "value": "true"
+    },
+    {
+      "field": "authMode",
+      "value": "user"
+    },
+    {
+      "field": "Type",
+      "value": "25"
+    },
+    {
+      "field": "VendorId",
+      "value": "0"
+    },
+    {
+      "field": "VendorType",
+      "value": "0"
+    },
+    {
+      "field": "AuthorId",
+      "value": "0"
+    },
+    {
+      "field": "Type",
+      "value": "25"
+    },
+    {
+      "field": "DisableUserPromptForServerValidation",
+      "value": "false"
+    },
+    {
+      "field": "FastReconnect",
+      "value": "true"
+    },
+    {
+      "field": "InnerEapOptional",
+      "value": "false"
+    },
+    {
+      "field": "Type",
+      "value": "26"
+    },
+    {
+      "field": "UseWinLogonCredentials",
+      "value": "false"
+    },
+    {
+      "field": "EnableQuarantineChecks",
+      "value": "false"
+    },
+    {
+      "field": "RequireCryptoBinding",
+      "value": "false"
+    },
+    {
+      "field": "PerformServerValidation",
+      "value": "true"
+    },
+    {
+      "field": "AcceptServerName",
+      "value": "true"
+    },
+    {
+      "field": "AllowPromptingWhenServerCANotFound",
+      "value": "true"
+    },
+    {
+      "field": "enableRandomization",
+      "value": "true"
+    }
+  ]
+}

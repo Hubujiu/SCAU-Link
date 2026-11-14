@@ -1,0 +1,15 @@
+{
+  "mode": 2,
+  "phase": "wireless_8021x",
+  "status": "passed",
+  "started_at": "2026-11-14T11:58:48.716+00:00",
+  "authentication": true,
+  "internet": true,
+  "crash_recovery": true,
+  "observation": true,
+  "disconnect": true,
+  "observation_probes": 10,
+  "owned_profile_cleanup": true,
+  "ended_at": "2026-11-14T12:01:06.021+00:00",
+  "passed": true
+}

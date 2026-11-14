@@ -1,0 +1,6 @@
+{
+  "explorer_broker_launch": true,
+  "synthetic_demo_only": true,
+  "demo_stopped": true,
+  "production_app_preserved": true
+}

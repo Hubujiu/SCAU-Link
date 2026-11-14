@@ -1,0 +1,51 @@
+[
+  {
+    "check": "Mini preferences and full manager share online state and recovery setting",
+    "passed": true
+  },
+  {
+    "check": "Closing full manager hides window and preserves online session",
+    "passed": true
+  },
+  {
+    "check": "Credentials appear only after connect and empty password is validated",
+    "passed": true
+  },
+  {
+    "check": "Simulated authentication completes while popover stays hidden",
+    "passed": true
+  },
+  {
+    "check": "Escape collapses details before hiding window",
+    "passed": true
+  },
+  {
+    "check": "Outside click hides popover while tray remains connected",
+    "passed": true
+  },
+  {
+    "check": "Recovery starts with compact message and hides process details",
+    "passed": true
+  },
+  {
+    "check": "Stop recovery returns to offline with connect as the only primary action",
+    "passed": true
+  },
+  {
+    "check": "Editing next-login account preserves active online account",
+    "passed": true
+  },
+  {
+    "check": "Next explicit connect returns to focused login form",
+    "passed": true,
+    "note": "Browser redacts credential field values; next-account value not asserted."
+  },
+  {
+    "check": "Narrow preview retains design overview navigation",
+    "passed": true
+  },
+  {
+    "check": "Overview reveals exceptional states only after explicit expansion",
+    "passed": true
+  }
+]

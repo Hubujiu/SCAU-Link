@@ -1,0 +1,71 @@
+{
+  "product": "SCAU Link",
+  "version": "0.11.1",
+  "releaseChannel": "preview",
+  "previewReason": "本机有线与 SCAUNET_1x 认证、上网和核心崩溃恢复已实测；长时在线、漫游、休眠及其他机器仍待验证",
+  "platform": "Windows x64",
+  "implementation": "C++20 / Win32 / Direct2D / DirectWrite / Windows WLAN and EAP / WinHTTP / static OpenSSL 3.5.9",
+  "change": "Fix SCAUNET_1x interoperability using an all-user manual Windows network profile with caller-only EAP credentials; add an offline-capable supervised network experiment and restoration evidence.",
+  "desktopSha256": "b6061a2e4a70cd8583a38fb4389fa5cf8fb017a6fc78802199a59e5d723c9137",
+  "authenticationSha256": "4b6e9980ac8f2522724bb02bc3f27e25ce70b8c74a7bc1bfac69b3903f614674",
+  "automatedTests": {
+    "passed": 34,
+    "total": 34,
+    "evidence": "test-results.txt",
+    "scope": "Full Release CTest: existing protocol/SAM/supervisor/accounts/TLS/billing/scrolling/Portal/password modules; WLAN 622 checks; network experiment 16 actual subprocess, recovery and Windows sharing-lock checks. Fixtures do not establish campus interoperability."
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "verificationKind": "historical checks carried forward with source comparison",
+    "passed": 7,
+    "total": 7,
+    "executedOnThisBuild": 0,
+    "evidence": "screenshots/interaction-checks.json",
+    "sourceComparison": "screenshots/source-comparison.json",
+    "scope": "Seven historical synthetic 0.11.0 checks retain their original binary hashes. UI source is identical apart from version numbers; no historical screenshot is attributed to 0.11.1. Real 0.11.1 desktop networking was tested separately.",
+    "priorUiDesktopSha256": [
+      "c54c3072e067b9469bf1038ce9278a663c2e414f73bbc81c2ad31be5e3fb5e5e",
+      "6ef1e94c873b0e1a809d6463e3e8b96e5bd45fa47ebb89760c6925e435057e46"
+    ]
+  },
+  "wireless8021x": {
+    "ssid": "SCAUNET_1x",
+    "authentication": "WPA2-Enterprise / AES / PEAP 25 / EAP-MSCHAPv2 26",
+    "modeSetting": 2,
+    "profile": "All-user network profile, random per-run identifier, manual, autoSwitch=false; selected store and current caller ownership tag checked before reuse or cleanup",
+    "credentials": "Caller-only EAP data, WlanSetProfileEapXmlUserData flags=0; existing encrypted private worker channel; temporary XML wiped",
+    "serverCertificatePolicy": "Legacy school-compatible PEAP server identity validation disabled only in this app-owned SCAUNET_1x profile; no system trust changes. Current RADIUS certificate not captured or pinned.",
+    "npcapRequired": false,
+    "ipv4RequiredBeforeAuthentication": false,
+    "wifiScanOrBssidQueries": false,
+    "applicationChangesHostIpConfiguration": false,
+    "research": "source/docs/SCAU-Wireless-8021X-20261114.md"
+  },
+  "liveNetworkLab": {
+    "status": "passed",
+    "date": "2026-11-14",
+    "timezone": "Asia/Shanghai",
+    "start": "2026-11-14T19:56:34+08:00",
+    "end": "2026-11-14T20:01:13+08:00",
+    "savedAccountCount": 1,
+    "ordinaryUserDesktop": true,
+    "elevatedComponent": "Independent watchdog/controller for user-authorized temporary WLAN DHCP and exact rollback only",
+    "wired": {"authentication": true, "boundDnsHttp": true, "forcedCoreCrashRecovery": true, "observationSeconds": 120, "observationProbes": 10, "gracefulStop": true},
+    "wireless8021x": {"authentication": true, "boundDnsHttp": true, "forcedCoreCrashRecovery": true, "observationSeconds": 120, "observationProbes": 10, "gracefulStop": true, "ownedProfileCleanup": true},
+    "restoration": {"originalClientNewAuthentication": true, "boundEthernetInternet": true, "settingsRestored": true, "wlanIpExactMatch": true, "accountCatalogUnchanged": true, "noStagedProcesses": true},
+    "independentPostChecks": {"passed": 13, "total": 13, "realExplorerUserContext": true},
+    "resultEvidence": "source/docs/network-delivery-20261114/result.json",
+    "restorationEvidence": "source/docs/network-delivery-20261114/final-state.json",
+    "report": "source/docs/Network-Delivery-Results-20261114.md",
+    "productionInstallationReplaced": false
+  },
+  "notVerified": [
+    "Long-duration stability, roaming, sleep/resume, hotplug and Windows reboot.",
+    "Interoperability on other machines or campus access points.",
+    "Live wireless Web authAPI acceptance, real password changes and campus pause/resume mutations in this test round.",
+    "Complete live SAM extension round trip in this test round.",
+    "All native UI interactions repeated on the 0.11.1 binary."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}

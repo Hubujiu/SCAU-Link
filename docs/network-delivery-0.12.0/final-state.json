@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-11-14T15:48:53.805+00:00",
+  "passed": true,
+  "checks": {
+    "realUserContext": true,
+    "originalProcessAlive": true,
+    "noStagedProcesses": true,
+    "originalSettingsRestored": true,
+    "accountCatalogUnchanged": true,
+    "ownedProfilesMatch": true,
+    "watchdogExited": true,
+    "controllerExited": true,
+    "wirelessIpExactMatch": true,
+    "dhcpSwitchRestored": true,
+    "manualDnsRestored": true,
+    "manualAddressesRestored": true,
+    "boundEthernetInternet": true
+  }
+}

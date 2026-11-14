@@ -1,0 +1,572 @@
+Start testing: Nov 14 23:41 中国标准时间
+----------------------------------------------------------
+1/34 Testing: desktop-tests
+1/34 Test: desktop-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/desktop-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"desktop-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: spring continuity/settling, silent startup, startup quoting, isolated Windows credential persistence
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"desktop-tests" end time: Nov 14 23:41 中国标准时间
+"desktop-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/34 Testing: logs-tests
+2/34 Test: logs-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/logs-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"logs-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: structured log filters, local date, ordering, bounded selection and private-payload exclusion
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"logs-tests" end time: Nov 14 23:41 中国标准时间
+"logs-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/34 Testing: account-pointer-tests
+3/34 Test: account-pointer-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/account-pointer-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"account-pointer-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+Native floating account gestures passed (hold, free movement, landing, cancellation, focus).
+<end of output>
+Test time =   1.37 sec
+----------------------------------------------------------
+Test Passed.
+"account-pointer-tests" end time: Nov 14 23:41 中国标准时间
+"account-pointer-tests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+4/34 Testing: list-scrollbar-tests
+4/34 Test: list-scrollbar-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/list-scrollbar-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"list-scrollbar-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   1.92 sec
+----------------------------------------------------------
+Test Passed.
+"list-scrollbar-tests" end time: Nov 14 23:41 中国标准时间
+"list-scrollbar-tests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+5/34 Testing: accounts-tests
+5/34 Test: accounts-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/accounts-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"accounts-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: isolated Windows multi-account storage, migration, atomic rollback, row-order persistence, pinning and bounded failover
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"accounts-tests" end time: Nov 14 23:41 中国标准时间
+"accounts-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/34 Testing: desktop-backend-tests
+6/34 Test: desktop-backend-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/desktop-backend-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"desktop-backend-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: offline asynchronous multi-account failover, exhaustion, cancellation, pinning and ordering
+<end of output>
+Test time =   2.19 sec
+----------------------------------------------------------
+Test Passed.
+"desktop-backend-tests" end time: Nov 14 23:41 中国标准时间
+"desktop-backend-tests" time elapsed: 00:00:02
+----------------------------------------------------------
+
+7/34 Testing: profile-store-tests
+7/34 Test: profile-store-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/profile-store-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"profile-store-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: credential-free native profile, live-address reset, bounded parsing and corruption rejection
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"profile-store-tests" end time: Nov 14 23:41 中国标准时间
+"profile-store-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/34 Testing: connection-setup-tests
+8/34 Test: connection-setup-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/connection-setup-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"connection-setup-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: empty-directory setup, local wire fields, adapter selection/waiting, cache/migration isolation, corruption and discovery
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"connection-setup-tests" end time: Nov 14 23:41 中国标准时间
+"connection-setup-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/34 Testing: portal-auth-tests
+9/34 Test: portal-auth-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/portal-auth-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"portal-auth-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+portal_auth_tests: 109 checks passed (synthetic and loopback only)
+<end of output>
+Test time =   3.58 sec
+----------------------------------------------------------
+Test Passed.
+"portal-auth-tests" end time: Nov 14 23:41 中国标准时间
+"portal-auth-tests" time elapsed: 00:00:03
+----------------------------------------------------------
+
+10/34 Testing: wireless-session-tests
+10/34 Test: wireless-session-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/wireless-session-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"wireless-session-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+wireless_session_tests: 258 checks passed (injected network/transport only)
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"wireless-session-tests" end time: Nov 14 23:41 中国标准时间
+"wireless-session-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/34 Testing: wireless-connection-tests
+11/34 Test: wireless-connection-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/wireless-connection-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"wireless-connection-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+wireless connection tests passed (149 checks)
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Passed.
+"wireless-connection-tests" end time: Nov 14 23:41 中国标准时间
+"wireless-connection-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/34 Testing: password-change-tests
+12/34 Test: password-change-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/password-change-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"password-change-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+Password change offline contract, single-submit and ambiguity checks passed
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"password-change-tests" end time: Nov 14 23:41 中国标准时间
+"password-change-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/34 Testing: wlan-8021x-tests
+13/34 Test: wlan-8021x-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/wlan-8021x-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"wlan-8021x-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+wlan_8021x_tests: 627 checks passed; native Windows PEAP XML parsing and injected sessions only; no WLAN mutations or campus authentication
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"wlan-8021x-tests" end time: Nov 14 23:41 中国标准时间
+"wlan-8021x-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/34 Testing: protocol-tests
+14/34 Test: protocol-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/protocol-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"protocol-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: MD5, CRC16, encoding, response construction and malformed frame boundaries
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"protocol-tests" end time: Nov 14 23:41 中国标准时间
+"protocol-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/34 Testing: observation-tests
+15/34 Test: observation-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/observation-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"observation-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: observation completion retains the session; explicit finite mode; delayed timer; one result
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"observation-tests" end time: Nov 14 23:41 中国标准时间
+"observation-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/34 Testing: maintenance-tests
+16/34 Test: maintenance-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/maintenance-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"maintenance-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: maintenance negotiation, disabled modes, bounds, units, and offline echo oracle
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"maintenance-tests" end time: Nov 14 23:41 中国标准时间
+"maintenance-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/34 Testing: recovery-tests
+17/34 Test: recovery-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/recovery-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"recovery-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: recovery fake-clock policies; bounded rejection retries; link/power/transport gates; fixed reauth deadline; permanent stop; eight-hour retained sessions and reconnects
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"recovery-tests" end time: Nov 14 23:41 中国标准时间
+"recovery-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/34 Testing: failure-tests
+18/34 Test: failure-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/failure-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"failure-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: standard/empty/private reason; bounds; unknown format; declared EAP length
+PASS: UTF-8/GBK reasons, unknown fallback, redaction, control normalization and UTF-8 truncation
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"failure-tests" end time: Nov 14 23:41 中国标准时间
+"failure-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/34 Testing: selfservice-crypto-tests
+19/34 Test: selfservice-crypto-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/selfservice-crypto-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"selfservice-crypto-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+Self-service crypto tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"selfservice-crypto-tests" end time: Nov 14 23:41 中国标准时间
+"selfservice-crypto-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/34 Testing: package-tests
+20/34 Test: package-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/package-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"package-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: exact money/calendar formats, known billing envelope, missing fields, unknown schema, no inferred expiry
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"package-tests" end time: Nov 14 23:41 中国标准时间
+"package-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/34 Testing: billing-query-tests
+21/34 Test: billing-query-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/billing-query-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"billing-query-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: fixed-day policy, exact/estimated separation, calendar/funding/state limits, isolated read-only request flow and fallback
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"billing-query-tests" end time: Nov 14 23:41 中国标准时间
+"billing-query-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/34 Testing: service-query-tests
+22/34 Test: service-query-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/service-query-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"service-query-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: offline own-session identity/permission/form checks, device counts, single POST, read-only reconciliation, expiry and cancellation
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"service-query-tests" end time: Nov 14 23:41 中国标准时间
+"service-query-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/34 Testing: http-response-tests
+23/34 Test: http-response-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/http-response-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"http-response-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: incremental HTTP framing, chunking, trailers, bounds, ambiguous lengths, encoding, redirects
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"http-response-tests" end time: Nov 14 23:41 中国标准时间
+"http-response-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/34 Testing: school-https-tests
+24/34 Test: school-https-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/school-https-tests.exe" "D:/Workspace/AiProjects/Ruijie/tests/fixtures"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"school-https-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: real TLS 1.2 / MD5-certificate loopback, fixed SNI/Host, GET/POST, scoped cookie, chunking, cancellation
+<end of output>
+Test time =   0.41 sec
+----------------------------------------------------------
+Test Passed.
+"school-https-tests" end time: Nov 14 23:41 中国标准时间
+"school-https-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/34 Testing: exchange-tests
+25/34 Test: exchange-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/exchange-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"exchange-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: repeated requests/key refresh; duplicate Success; padding; peer/id binding; late rejection cancels retry
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"exchange-tests" end time: Nov 14 23:41 中国标准时间
+"exchange-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/34 Testing: capture-tests
+26/34 Test: capture-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/capture-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"capture-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: worker recovery appends sections; complete records retained; partial tail repaired; corruption refused
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"capture-tests" end time: Nov 14 23:41 中国标准时间
+"capture-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/34 Testing: supervisor-tests
+27/34 Test: supervisor-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/supervisor-tests.exe" "D:/Workspace/AiProjects/Ruijie/build/Release/worker-fixture.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"supervisor-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: encrypted session-only credentials; private one-way allowlisted pipes; crash/zero-exit recovery; Terminal and stop priority; bounded backoff/window/healthy reset; malformed IPC; parent job cleanup; no handle leaks
+<end of output>
+Test time =   1.25 sec
+----------------------------------------------------------
+Test Passed.
+"supervisor-tests" end time: Nov 14 23:41 中国标准时间
+"supervisor-tests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+28/34 Testing: sam-crypto-tests
+28/34 Test: sam-crypto-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/sam-crypto-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"sam-crypto-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+SAM crypto tests passed (offline synthetic data)
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"sam-crypto-tests" end time: Nov 14 23:41 中国标准时间
+"sam-crypto-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/34 Testing: sam-tests
+29/34 Test: sam-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/sam-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"sam-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+SAM offline protocol tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"sam-tests" end time: Nov 14 23:41 中国标准时间
+"sam-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/34 Testing: sam-runtime-tests
+30/34 Test: sam-runtime-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/sam-runtime-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"sam-runtime-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+SAM runtime offline tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"sam-runtime-tests" end time: Nov 14 23:41 中国标准时间
+"sam-runtime-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/34 Testing: sam-udp-tests
+31/34 Test: sam-udp-tests
+Command: "D:/Workspace/AiProjects/Ruijie/build/Release/sam-udp-tests.exe"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"sam-udp-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: loopback-only Windows UDP binding, peer filter, pinned source, exclusive port and nonblocking I/O
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"sam-udp-tests" end time: Nov 14 23:41 中国标准时间
+"sam-udp-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/34 Testing: controller-tests
+32/34 Test: controller-tests
+Command: "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe" "-NoProfile" "-ExecutionPolicy" "Bypass" "-File" "D:/Workspace/AiProjects/Ruijie/tests/controller_tests.ps1"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"controller-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+PASS: observation deadline retains the connection; process-only/stale/failed restoration rejected; fresh success verified.
+<end of output>
+Test time =   1.18 sec
+----------------------------------------------------------
+Test Passed.
+"controller-tests" end time: Nov 14 23:41 中国标准时间
+"controller-tests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+33/34 Testing: summary-tests
+33/34 Test: summary-tests
+Command: "C:/Users/Hubujiu/AppData/Local/Microsoft/WindowsApps/python.exe" "D:/Workspace/AiProjects/Ruijie/tests/summary_tests.py"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"summary-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.039s
+
+OK
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"summary-tests" end time: Nov 14 23:41 中国标准时间
+"summary-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/34 Testing: network-lab-tests
+34/34 Test: network-lab-tests
+Command: "C:/Users/Hubujiu/AppData/Local/Microsoft/WindowsApps/python.exe" "D:/Workspace/AiProjects/Ruijie/tests/network_lab_tests.py"
+Directory: D:/Workspace/AiProjects/Ruijie/build
+"network-lab-tests" start time: Nov 14 23:41 中国标准时间
+Output:
+----------------------------------------------------------
+test_controller_crash_recovers (__main__.OfflineRecoveryTests.test_controller_crash_recovers) ... ok
+test_corrupt_backup_is_rejected (__main__.OfflineRecoveryTests.test_corrupt_backup_is_rejected) ... ok
+test_corrupt_backup_still_starts_fallback_and_reports_failure (__main__.OfflineRecoveryTests.test_corrupt_backup_still_starts_fallback_and_reports_failure) ... ok
+test_empty_settings_restores_absence (__main__.OfflineRecoveryTests.test_empty_settings_restores_absence) ... ok
+test_hard_deadline_restores_despite_live_heartbeat (__main__.OfflineRecoveryTests.test_hard_deadline_restores_despite_live_heartbeat) ... ok
+test_heartbeat_continues_during_slow_restore (__main__.OfflineRecoveryTests.test_heartbeat_continues_during_slow_restore) ... ok
+test_hung_controller_recovers (__main__.OfflineRecoveryTests.test_hung_controller_recovers) ... ok
+test_journal_persistent_sharing_denial_is_reported (__main__.OfflineRecoveryTests.test_journal_persistent_sharing_denial_is_reported) ... ok
+test_journal_retries_real_windows_sharing_locks (__main__.OfflineRecoveryTests.test_journal_retries_real_windows_sharing_locks) ... ok
+test_logs_exclude_credential_fields_and_ignore_partial_records (__main__.OfflineRecoveryTests.test_logs_exclude_credential_fields_and_ignore_partial_records) ... ok
+test_manual_stop_restores (__main__.OfflineRecoveryTests.test_manual_stop_restores) ... ok
+test_offline_failure_recovers (__main__.OfflineRecoveryTests.test_offline_failure_recovers) ... ok
+test_passive_eap_metadata_does_not_export_identity_or_payload (__main__.OfflineRecoveryTests.test_passive_eap_metadata_does_not_export_identity_or_payload) ... ok
+test_pid_reuse_guard (__main__.OfflineRecoveryTests.test_pid_reuse_guard) ... ok
+test_process_exit_during_identity_read_is_not_a_live_identity_failure (__main__.OfflineRecoveryTests.test_process_exit_during_identity_read_is_not_a_live_identity_failure) ... ok
+test_restore_rejects_stale_or_worker_only_authentication (__main__.OfflineRecoveryTests.test_restore_rejects_stale_or_worker_only_authentication) ... ok
+test_watchdog_crash_controller_recovers (__main__.OfflineRecoveryTests.test_watchdog_crash_controller_recovers) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 12.367s
+
+OK
+<end of output>
+Test time =  12.57 sec
+----------------------------------------------------------
+Test Passed.
+"network-lab-tests" end time: Nov 14 23:41 中国标准时间
+"network-lab-tests" time elapsed: 00:00:12
+----------------------------------------------------------
+
+End testing: Nov 14 23:41 中国标准时间

@@ -1,0 +1,2 @@
+{"time":"2026-11-14T15:45:33.782+00:00","event":"watchdog_armed","controller_pid":48664,"deadline_seconds":720}
+{"time":"2026-11-14T15:46:30.767+00:00","event":"watchdog_triggered","reason":"controller_exit"}

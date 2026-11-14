@@ -1,0 +1,168 @@
+[
+  {
+    "file": "01-connect.html",
+    "page": "home",
+    "state": "offline",
+    "name": "连接前",
+    "description": "输入凭据与开始认证"
+  },
+  {
+    "file": "02-online.html",
+    "page": "home",
+    "state": "online",
+    "name": "连接成功",
+    "description": "在线时长、连接检查与最近活动"
+  },
+  {
+    "file": "03-account.html",
+    "page": "account",
+    "state": "online",
+    "name": "账号与服务",
+    "description": "会话凭据、认证服务与隐私边界"
+  },
+  {
+    "file": "04-network.html",
+    "page": "network",
+    "state": "online",
+    "name": "网络适配器",
+    "description": "固定物理网卡，显示连接详情"
+  },
+  {
+    "file": "05-preferences.html",
+    "page": "preferences",
+    "state": "online",
+    "name": "偏好设置",
+    "description": "恢复、通知、窗口和启动方式"
+  },
+  {
+    "file": "06-logs.html",
+    "page": "logs",
+    "state": "online",
+    "name": "运行记录",
+    "description": "搜索、筛选与脱敏诊断导出"
+  },
+  {
+    "file": "07-about.html",
+    "page": "about",
+    "state": "online",
+    "name": "关于",
+    "description": "版本、许可与开源致谢"
+  },
+  {
+    "file": "08-onboarding.html",
+    "page": "setup",
+    "state": "offline",
+    "name": "首次使用",
+    "description": "环境检查与账号设置引导"
+  },
+  {
+    "file": "09-recovery.html",
+    "page": "home",
+    "state": "recovering",
+    "name": "自动恢复",
+    "description": "重试进度、原因和停止入口"
+  },
+  {
+    "file": "10-rejected.html",
+    "page": "home",
+    "state": "rejected",
+    "name": "认证被拒绝",
+    "description": "解释失败，停止盲目重试"
+  },
+  {
+    "file": "11-no-cable.html",
+    "page": "home",
+    "state": "unplugged",
+    "name": "等待网线",
+    "description": "物理连接中断与等待恢复"
+  },
+  {
+    "file": "12-tray.html",
+    "page": "home",
+    "state": "online",
+    "name": "通知区域",
+    "description": "托盘菜单与保持在线的窗口行为",
+    "surface": "mini"
+  },
+  {
+    "file": "mini.html",
+    "page": "home",
+    "state": "online",
+    "surface": "mini",
+    "expanded": false,
+    "name": "Mini 小窗",
+    "description": "托盘打开后，只看状态与主操作"
+  },
+  {
+    "file": "mini-details.html",
+    "page": "home",
+    "state": "online",
+    "surface": "mini",
+    "expanded": true,
+    "name": "按需展开详情",
+    "description": "点击后再显示检查结果与当前网卡"
+  },
+  {
+    "file": "mini-account.html",
+    "page": "account",
+    "state": "offline",
+    "surface": "mini",
+    "expanded": false,
+    "name": "需要时才登录",
+    "description": "开始连接时进入独立账号面板"
+  },
+  {
+    "file": "mini-recovery.html",
+    "page": "home",
+    "state": "recovering",
+    "surface": "mini",
+    "expanded": false,
+    "name": "自动恢复",
+    "description": "短提示与停止入口，过程可再展开"
+  },
+  {
+    "file": "mini-rejected.html",
+    "page": "home",
+    "state": "rejected",
+    "surface": "mini",
+    "expanded": false,
+    "name": "需要处理",
+    "description": "明确提醒检查账号，停止自动重试"
+  },
+  {
+    "file": "mini-no-cable.html",
+    "page": "home",
+    "state": "unplugged",
+    "surface": "mini",
+    "expanded": false,
+    "name": "等待网线",
+    "description": "解释原因并保留取消入口"
+  },
+  {
+    "file": "mini-offline.html",
+    "page": "home",
+    "state": "offline",
+    "surface": "mini",
+    "expanded": false,
+    "name": "连接之前",
+    "description": "按下连接后才显示账号表单"
+  },
+  {
+    "file": "mini-preferences.html",
+    "page": "preferences",
+    "state": "online",
+    "surface": "mini",
+    "expanded": false,
+    "name": "Mini 偏好设置",
+    "description": "常用开关优先，启动与窗口再展开"
+  },
+  {
+    "file": "mini-logs.html",
+    "page": "logs",
+    "state": "online",
+    "surface": "mini",
+    "expanded": false,
+    "name": "Mini 最近记录",
+    "description": "先看最近事件，再进入完整诊断"
+  }
+]

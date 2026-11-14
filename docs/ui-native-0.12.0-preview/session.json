@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "mode": "isolated native demo",
+  "desktopSha256": "085e69a7d5da5651617f18197fd7c738193517ae7b08b4c857d6fb8144a3a0b8",
+  "observedAt": "2026-11-14T15:50:48.355Z",
+  "checks": [
+    {
+      "name": "Startup defaults to last selected connection mode",
+      "passed": true
+    },
+    {
+      "name": "Primary choice progressively reveals backup field",
+      "passed": true
+    },
+    {
+      "name": "Keyboard menu navigation skips duplicates and preserves startup order",
+      "passed": true
+    },
+    {
+      "name": "Mini mode preserves monitor center",
+      "passed": true
+    },
+    {
+      "name": "Mini settings only exposes exit mini mode",
+      "passed": true
+    }
+  ],
+  "scope": "Five startup-menu and mini-mode checks executed on the packaged final desktop. Synthetic demo; no real authentication or startup registry writes."
+}

@@ -1,0 +1,232 @@
+[
+  {
+    "file": "01-connect.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "02-online.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "03-account.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "04-network.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "05-preferences.html",
+    "full": {
+      "client": 658,
+      "scroll": 702
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "06-logs.html",
+    "full": {
+      "client": 658,
+      "scroll": 766
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "07-about.html",
+    "full": {
+      "client": 658,
+      "scroll": 659
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "08-onboarding.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "09-recovery.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "10-rejected.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "11-no-cable.html",
+    "full": {
+      "client": 658,
+      "scroll": 658
+    },
+    "mini": null,
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "12-tray.html",
+    "full": null,
+    "mini": {
+      "client": 274,
+      "height": 329.578125,
+      "scroll": 274,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini.html",
+    "full": null,
+    "mini": {
+      "client": 274,
+      "height": 329.578125,
+      "scroll": 274,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-details.html",
+    "full": null,
+    "mini": {
+      "client": 503,
+      "height": 558.921875,
+      "scroll": 503,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-account.html",
+    "full": null,
+    "mini": {
+      "client": 394,
+      "height": 450.03125,
+      "scroll": 394,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-recovery.html",
+    "full": null,
+    "mini": {
+      "client": 271,
+      "height": 326.875,
+      "scroll": 271,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-rejected.html",
+    "full": null,
+    "mini": {
+      "client": 271,
+      "height": 326.875,
+      "scroll": 271,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-no-cable.html",
+    "full": null,
+    "mini": {
+      "client": 271,
+      "height": 326.875,
+      "scroll": 271,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-offline.html",
+    "full": null,
+    "mini": {
+      "client": 274,
+      "height": 329.578125,
+      "scroll": 274,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-preferences.html",
+    "full": null,
+    "mini": {
+      "client": 309,
+      "height": 365.4062194824219,
+      "scroll": 309,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  },
+  {
+    "file": "mini-logs.html",
+    "full": null,
+    "mini": {
+      "client": 522,
+      "height": 578.359375,
+      "scroll": 522,
+      "width": 360
+    },
+    "pageWidth": 1280,
+    "viewportWidth": 1280
+  }
+]

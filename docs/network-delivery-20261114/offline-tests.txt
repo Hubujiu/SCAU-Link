@@ -1,0 +1,21 @@
+test_controller_crash_recovers (__main__.OfflineRecoveryTests.test_controller_crash_recovers) ... ok
+test_corrupt_backup_is_rejected (__main__.OfflineRecoveryTests.test_corrupt_backup_is_rejected) ... ok
+test_corrupt_backup_still_starts_fallback_and_reports_failure (__main__.OfflineRecoveryTests.test_corrupt_backup_still_starts_fallback_and_reports_failure) ... ok
+test_empty_settings_restores_absence (__main__.OfflineRecoveryTests.test_empty_settings_restores_absence) ... ok
+test_hard_deadline_restores_despite_live_heartbeat (__main__.OfflineRecoveryTests.test_hard_deadline_restores_despite_live_heartbeat) ... ok
+test_heartbeat_continues_during_slow_restore (__main__.OfflineRecoveryTests.test_heartbeat_continues_during_slow_restore) ... ok
+test_hung_controller_recovers (__main__.OfflineRecoveryTests.test_hung_controller_recovers) ... ok
+test_journal_persistent_sharing_denial_is_reported (__main__.OfflineRecoveryTests.test_journal_persistent_sharing_denial_is_reported) ... ok
+test_journal_retries_real_windows_sharing_locks (__main__.OfflineRecoveryTests.test_journal_retries_real_windows_sharing_locks) ... ok
+test_logs_exclude_credential_fields_and_ignore_partial_records (__main__.OfflineRecoveryTests.test_logs_exclude_credential_fields_and_ignore_partial_records) ... ok
+test_manual_stop_restores (__main__.OfflineRecoveryTests.test_manual_stop_restores) ... ok
+test_offline_failure_recovers (__main__.OfflineRecoveryTests.test_offline_failure_recovers) ... ok
+test_passive_eap_metadata_does_not_export_identity_or_payload (__main__.OfflineRecoveryTests.test_passive_eap_metadata_does_not_export_identity_or_payload) ... ok
+test_pid_reuse_guard (__main__.OfflineRecoveryTests.test_pid_reuse_guard) ... ok
+test_restore_rejects_stale_or_worker_only_authentication (__main__.OfflineRecoveryTests.test_restore_rejects_stale_or_worker_only_authentication) ... ok
+test_watchdog_crash_controller_recovers (__main__.OfflineRecoveryTests.test_watchdog_crash_controller_recovers) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 15.878s
+
+OK

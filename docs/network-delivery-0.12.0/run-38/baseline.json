@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "interface": 21,
+  "interface_bound": true,
+  "adapter_state": "Up",
+  "ip_state": "Connected",
+  "dhcp": "Enabled",
+  "configured_dhcp": 1,
+  "preferred_ipv4": true,
+  "dns_count": 1,
+  "dns_direct": true,
+  "http_verified": true,
+  "duration_ms": 1474
+}

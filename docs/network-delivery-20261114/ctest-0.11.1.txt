@@ -1,0 +1,74 @@
+Internal ctest changing into directory: D:/Workspace/AiProjects/Ruijie/build
+Test project D:/Workspace/AiProjects/Ruijie/build
+      Start  1: desktop-tests
+ 1/34 Test  #1: desktop-tests ....................   Passed    0.06 sec
+      Start  2: logs-tests
+ 2/34 Test  #2: logs-tests .......................   Passed    0.04 sec
+      Start  3: account-pointer-tests
+ 3/34 Test  #3: account-pointer-tests ............   Passed    1.85 sec
+      Start  4: list-scrollbar-tests
+ 4/34 Test  #4: list-scrollbar-tests .............   Passed    2.20 sec
+      Start  5: accounts-tests
+ 5/34 Test  #5: accounts-tests ...................   Passed    0.22 sec
+      Start  6: desktop-backend-tests
+ 6/34 Test  #6: desktop-backend-tests ............   Passed    1.73 sec
+      Start  7: profile-store-tests
+ 7/34 Test  #7: profile-store-tests ..............   Passed    0.02 sec
+      Start  8: connection-setup-tests
+ 8/34 Test  #8: connection-setup-tests ...........   Passed    0.05 sec
+      Start  9: portal-auth-tests
+ 9/34 Test  #9: portal-auth-tests ................   Passed    3.61 sec
+      Start 10: wireless-session-tests
+10/34 Test #10: wireless-session-tests ...........   Passed    0.06 sec
+      Start 11: wireless-connection-tests
+11/34 Test #11: wireless-connection-tests ........   Passed    0.14 sec
+      Start 12: password-change-tests
+12/34 Test #12: password-change-tests ............   Passed    0.02 sec
+      Start 13: wlan-8021x-tests
+13/34 Test #13: wlan-8021x-tests .................   Passed    0.07 sec
+      Start 14: protocol-tests
+14/34 Test #14: protocol-tests ...................   Passed    0.02 sec
+      Start 15: observation-tests
+15/34 Test #15: observation-tests ................   Passed    0.01 sec
+      Start 16: maintenance-tests
+16/34 Test #16: maintenance-tests ................   Passed    0.02 sec
+      Start 17: recovery-tests
+17/34 Test #17: recovery-tests ...................   Passed    0.02 sec
+      Start 18: failure-tests
+18/34 Test #18: failure-tests ....................   Passed    0.03 sec
+      Start 19: selfservice-crypto-tests
+19/34 Test #19: selfservice-crypto-tests .........   Passed    0.02 sec
+      Start 20: package-tests
+20/34 Test #20: package-tests ....................   Passed    0.03 sec
+      Start 21: billing-query-tests
+21/34 Test #21: billing-query-tests ..............   Passed    0.07 sec
+      Start 22: service-query-tests
+22/34 Test #22: service-query-tests ..............   Passed    0.15 sec
+      Start 23: http-response-tests
+23/34 Test #23: http-response-tests ..............   Passed    0.02 sec
+      Start 24: school-https-tests
+24/34 Test #24: school-https-tests ...............   Passed    0.44 sec
+      Start 25: exchange-tests
+25/34 Test #25: exchange-tests ...................   Passed    0.02 sec
+      Start 26: capture-tests
+26/34 Test #26: capture-tests ....................   Passed    0.06 sec
+      Start 27: supervisor-tests
+27/34 Test #27: supervisor-tests .................   Passed    1.94 sec
+      Start 28: sam-crypto-tests
+28/34 Test #28: sam-crypto-tests .................   Passed    0.02 sec
+      Start 29: sam-tests
+29/34 Test #29: sam-tests ........................   Passed    0.03 sec
+      Start 30: sam-runtime-tests
+30/34 Test #30: sam-runtime-tests ................   Passed    0.02 sec
+      Start 31: sam-udp-tests
+31/34 Test #31: sam-udp-tests ....................   Passed    0.02 sec
+      Start 32: controller-tests
+32/34 Test #32: controller-tests .................   Passed    2.13 sec
+      Start 33: summary-tests
+33/34 Test #33: summary-tests ....................   Passed    0.45 sec
+      Start 34: network-lab-tests
+34/34 Test #34: network-lab-tests ................   Passed   15.78 sec
+
+100% tests passed, 0 tests failed out of 34
+
+Total Test time (real) =  31.44 sec

@@ -1,0 +1,62 @@
+[
+  {
+    "screen": "01-connect.html",
+    "title": "连接总览 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "02-online.html",
+    "title": "连接总览 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "03-account.html",
+    "title": "账号与服务 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "04-network.html",
+    "title": "网络适配器 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "05-preferences.html",
+    "title": "偏好设置 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "06-logs.html",
+    "title": "运行记录 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "07-about.html",
+    "title": "关于 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "08-onboarding.html",
+    "title": "首次使用 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "09-recovery.html",
+    "title": "连接总览 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "10-rejected.html",
+    "title": "连接总览 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "11-no-cable.html",
+    "title": "连接总览 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  },
+  {
+    "screen": "12-tray.html",
+    "title": "连接总览 · SCAU Link 界面预览",
+    "horizontalOverflow": false
+  }
+]

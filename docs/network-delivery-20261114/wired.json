@@ -1,0 +1,14 @@
+{
+  "mode": 0,
+  "phase": "wired",
+  "status": "passed",
+  "started_at": "2026-11-14T11:56:35.407+00:00",
+  "authentication": true,
+  "internet": true,
+  "crash_recovery": true,
+  "observation": true,
+  "disconnect": true,
+  "observation_probes": 10,
+  "ended_at": "2026-11-14T11:58:48.708+00:00",
+  "passed": true
+}

@@ -1,0 +1,2 @@
+{"time":"2026-11-14T15:44:29.024+00:00","event":"watchdog_armed","controller_pid":8320,"deadline_seconds":720}
+{"time":"2026-11-14T15:45:27.204+00:00","event":"preflight_or_watchdog_failed","code":"process_identity_unavailable","exception_type":"RuntimeError","errno":null,"winerror":null}

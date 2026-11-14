@@ -1,0 +1,25 @@
+{
+  "rejectedOldFalsePositive": {
+    "run": 27,
+    "oldReportedPass": true,
+    "terminal": 6,
+    "accepted": false
+  },
+  "elevatedNotOrdinary": {
+    "run": 33,
+    "probeElevated": 1,
+    "acceptedAsOrdinary": false
+  },
+  "processObservationFailure": {
+    "run": 34,
+    "accepted": false
+  },
+  "preRequestEnvironmentFailure": {
+    "run": 36,
+    "terminal": 4,
+    "exactRootCauseCaptured": false,
+    "accepted": false
+  },
+  "retainedRawEvidenceLocally": true,
+  "rewrittenHistoricalResults": false
+}

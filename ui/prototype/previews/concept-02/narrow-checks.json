@@ -1,0 +1,42 @@
+[
+  {
+    "file": "mini.html",
+    "contentClient": 271,
+    "contentScroll": 271,
+    "miniWidth": 280,
+    "right": 292,
+    "viewport": 304,
+    "width": 304,
+    "x": 12
+  },
+  {
+    "file": "mini-details.html",
+    "contentClient": 501,
+    "contentScroll": 501,
+    "miniWidth": 280,
+    "right": 292,
+    "viewport": 304,
+    "width": 304,
+    "x": 12
+  },
+  {
+    "file": "mini-account.html",
+    "contentClient": 394,
+    "contentScroll": 394,
+    "miniWidth": 280,
+    "right": 292,
+    "viewport": 304,
+    "width": 304,
+    "x": 12
+  },
+  {
+    "file": "mini-recovery.html",
+    "contentClient": 267,
+    "contentScroll": 267,
+    "miniWidth": 280,
+    "right": 292,
+    "viewport": 304,
+    "width": 304,
+    "x": 12
+  }
+]

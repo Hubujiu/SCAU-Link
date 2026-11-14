@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Startup defaults to last selected connection mode",
+    "passed": true
+  },
+  {
+    "name": "Primary choice progressively reveals backup field",
+    "passed": true
+  },
+  {
+    "name": "Keyboard menu navigation skips duplicates and preserves startup order",
+    "passed": true
+  },
+  {
+    "name": "Mini mode preserves monitor center",
+    "passed": true
+  },
+  {
+    "name": "Mini settings only exposes exit mini mode",
+    "passed": true
+  }
+]

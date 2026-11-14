@@ -1,0 +1,22 @@
+{
+  "ended_at": "2026-11-14T15:46:30.780+00:00",
+  "restored": true,
+  "test_passed": true,
+  "cases": [
+    {
+      "phase": "native_credential_probe",
+      "profile_store": "fresh-wireless-web",
+      "passed": true,
+      "authentication": true,
+      "preexisting_network": false,
+      "internet": true,
+      "package_balance": true,
+      "clean_terminal": true
+    }
+  ],
+  "not_tested_live": [
+    "password_change",
+    "campus_pause_resume",
+    "long_duration_roaming_sleep_resume"
+  ]
+}

@@ -1,0 +1,8 @@
+Internal ctest changing into directory: D:/Workspace/AiProjects/Ruijie/build
+Test project D:/Workspace/AiProjects/Ruijie/build
+    Start 34: network-lab-tests
+1/1 Test #34: network-lab-tests ................   Passed   10.50 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  10.51 sec

@@ -1,0 +1,12 @@
+{
+  "version": "7.1.1",
+  "homepage": "https://jrsoftware.org/",
+  "source": "https://github.com/jrsoftware/issrc/tree/is-7_1_1",
+  "compilerUrl": "https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe",
+  "compilerSha256": "8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0",
+  "compilerSignaturePublisher": "Pyrsys B.V.",
+  "licenseUrl": "https://raw.githubusercontent.com/jrsoftware/issrc/is-7_1_1/license.txt",
+  "licenseSha256": "2e5346868c2a18434489824e11d65c3031620f792fefc415d05f19cd441abf5c",
+  "bootstrapMode": "PORTABLE=1 CURRENTUSER VERYSILENT; no compiler associations, shortcuts or uninstall registry entry",
+  "modified": false
+}

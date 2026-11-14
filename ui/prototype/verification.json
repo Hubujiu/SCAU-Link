@@ -1,0 +1,85 @@
+{
+  "concept": "02",
+  "createdAt": "2026-11-12T14:19:56.878454+00:00",
+  "entry": "mini.html",
+  "gallery": "overview.html",
+  "htmlFiles": 23,
+  "screens": 21,
+  "newMiniViews": 9,
+  "desktopViewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "narrowViewport": {
+    "width": 304,
+    "height": 900
+  },
+  "galleryCaptureViewport": {
+    "width": 1280,
+    "height": 1500
+  },
+  "javascriptSyntax": "node --check passed for app.js, mini.js and overview.js",
+  "relativeAssetsVerified": true,
+  "externalAssetDependencies": false,
+  "horizontalOverflow": false,
+  "interactionChecks": [
+    {
+      "check": "Mini preferences and full manager share online state and recovery setting",
+      "passed": true
+    },
+    {
+      "check": "Closing full manager hides window and preserves online session",
+      "passed": true
+    },
+    {
+      "check": "Credentials appear only after connect and empty password is validated",
+      "passed": true
+    },
+    {
+      "check": "Simulated authentication completes while popover stays hidden",
+      "passed": true
+    },
+    {
+      "check": "Escape collapses details before hiding window",
+      "passed": true
+    },
+    {
+      "check": "Outside click hides popover while tray remains connected",
+      "passed": true
+    },
+    {
+      "check": "Recovery starts with compact message and hides process details",
+      "passed": true
+    },
+    {
+      "check": "Stop recovery returns to offline with connect as the only primary action",
+      "passed": true
+    },
+    {
+      "check": "Editing next-login account preserves active online account",
+      "passed": true
+    },
+    {
+      "check": "Next explicit connect returns to focused login form",
+      "passed": true,
+      "note": "Browser redacts credential field values; next-account value not asserted."
+    },
+    {
+      "check": "Narrow preview retains design overview navigation",
+      "passed": true
+    },
+    {
+      "check": "Overview reveals exceptional states only after explicit expansion",
+      "passed": true
+    }
+  ],
+  "screenshots": "previews/concept-02/",
+  "renderChecks": "previews/concept-02/page-checks.json",
+  "browserConsole": {
+    "entries": 6,
+    "record": "previews/concept-02/browser-console.json",
+    "note": "The browser logged MutationObserver TypeErrors without a source location during gallery navigation. No MutationObserver calls exist in the prototype sources. All 12 interaction checks passed. The source of these browser entries is unverified."
+  },
+  "fileScheme": "Not verified in the in-app browser; use the provided localhost HTTP preview.",
+  "scope": "Standalone simulated HTML only. No native authentication, adapter changes, driver/service changes or original-client process operations were performed."
+}

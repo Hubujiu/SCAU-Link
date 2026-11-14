@@ -1,0 +1,106 @@
+[
+  {
+    "run": 38,
+    "name": "fresh-web",
+    "passed": true,
+    "restored": true,
+    "ordinaryUser": true,
+    "freshAccountStore": true,
+    "noImportedConfiguration": true,
+    "packageFields": [
+      "balance",
+      "periodicFee",
+      "nextChargeOrLabelledEstimate"
+    ],
+    "case": {
+      "phase": "native_credential_probe",
+      "profile_store": "fresh-wireless-web",
+      "passed": true,
+      "authentication": true,
+      "preexisting_network": false,
+      "internet": true,
+      "package_balance": true,
+      "clean_terminal": true
+    },
+    "evidence": "run-38/result.json"
+  },
+  {
+    "run": 39,
+    "name": "startup-1x-recovery",
+    "passed": true,
+    "restored": true,
+    "ordinaryUser": true,
+    "freshAccountStore": true,
+    "noImportedConfiguration": true,
+    "packageFields": [
+      "balance",
+      "periodicFee",
+      "nextChargeOrLabelledEstimate"
+    ],
+    "case": {
+      "phase": "native_credential_probe",
+      "profile_store": "backend-1x",
+      "passed": true,
+      "authentication": true,
+      "preexisting_network": false,
+      "internet": true,
+      "crash_recovery": true,
+      "recovery_internet": true,
+      "package_balance": true,
+      "clean_terminal": true
+    },
+    "evidence": "run-39/result.json"
+  },
+  {
+    "run": 40,
+    "name": "startup-web-network-available-recovery",
+    "passed": true,
+    "restored": true,
+    "ordinaryUser": true,
+    "freshAccountStore": true,
+    "noImportedConfiguration": true,
+    "packageFields": [
+      "balance",
+      "periodicFee",
+      "nextChargeOrLabelledEstimate"
+    ],
+    "case": {
+      "phase": "native_credential_probe",
+      "profile_store": "backend-web",
+      "passed": true,
+      "authentication": false,
+      "preexisting_network": true,
+      "internet": true,
+      "crash_recovery": true,
+      "recovery_internet": true,
+      "package_balance": true,
+      "clean_terminal": true
+    },
+    "evidence": "run-40/result.json"
+  },
+  {
+    "run": 41,
+    "name": "fresh-web-repeat",
+    "passed": true,
+    "restored": true,
+    "ordinaryUser": true,
+    "freshAccountStore": true,
+    "noImportedConfiguration": true,
+    "packageFields": [
+      "balance",
+      "periodicFee",
+      "nextChargeOrLabelledEstimate"
+    ],
+    "case": {
+      "phase": "native_credential_probe",
+      "profile_store": "fresh-wireless-web",
+      "passed": true,
+      "authentication": true,
+      "preexisting_network": false,
+      "internet": true,
+      "package_balance": true,
+      "clean_terminal": true
+    },
+    "evidence": "run-41/result.json"
+  }
+]

@@ -1,0 +1,194 @@
+{
+  "product": "SCAU Link",
+  "version": "0.12.0",
+  "releaseChannel": "preview",
+  "previewReason": "本机普通权限无线新登录、自动连接、核心恢复和套餐查询已实测；Windows 实际重启、其他电脑及长时稳定性尚未验证",
+  "platform": "Windows x64",
+  "testedPlatform": "Windows 11 Pro 22621; physical WLAN and Ethernet",
+  "implementation": "C++20 / Win32 / Direct2D / DirectWrite / WLAN and EAP / WinHTTP / static OpenSSL 3.5.9",
+  "change": "Automatic SCAUNET association and InterFace Portal compatibility; stable SCAUNET_1x profiles with caller-only credentials; ordered startup; interface-bound first-login package queries and reconnect cache.",
+  "desktopSha256": "085e69a7d5da5651617f18197fd7c738193517ae7b08b4c857d6fb8144a3a0b8",
+  "authenticationSha256": "615df8d16fb23c4815846fa13312694e59043fb966bf19b81693bc9d5f769245",
+  "automatedTests": {
+    "passed": 34,
+    "total": 34,
+    "evidence": "test-results.txt",
+    "offlineLabFaultChecks": 17,
+    "scope": "Final Release CTest including startup fallback/cancellation, late billing response generation, Portal form/RSA, IPC, TLS, WLAN, recovery, real subprocess and Windows sharing-lock fixtures. Fixtures do not establish campus interoperability."
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "verificationKind": "final binary isolated native demo",
+    "passed": 5,
+    "total": 5,
+    "executedOnThisBuild": 5,
+    "evidence": "screenshots/interaction-checks.json",
+    "session": "screenshots/session.json",
+    "desktopSha256": "085e69a7d5da5651617f18197fd7c738193517ae7b08b4c857d6fb8144a3a0b8",
+    "scope": "Five startup-menu and mini-mode checks executed on the packaged final desktop. Synthetic demo; no real authentication or startup registry writes."
+  },
+  "wireless8021x": {
+    "ssid": "SCAUNET_1x",
+    "profileName": "SCAUNET_1x",
+    "authentication": "WPA2-Enterprise / AES / PEAP 25 / EAP-MSCHAPv2 26",
+    "profile": "Stable manual all-user network profile; no Windows-logon SSO; stable MAC setting",
+    "credentials": "Caller-only WlanSetProfileEapXmlUserData flags=0; Credential Manager and private worker channel",
+    "serverCertificatePolicy": "School-compatible PEAP server identity validation disabled only for campus profile; no system trust changes; current RADIUS certificate not pinned",
+    "applicationChangesHostIpConfiguration": false,
+    "npcapRequired": false
+  },
+  "wirelessWeb": {
+    "ssid": "SCAUNET",
+    "automaticAssociation": true,
+    "liveProtocol": "InterFace.do form with compatible browser UA, pageInfo empty service object, keepalive and logout",
+    "freshLoginRuns": [
+      38,
+      41
+    ],
+    "cachedNetworkRecoveryRun": 40,
+    "cachedNetworkIsAccountAuthentication": false,
+    "liveRsaEncryptionRequired": false
+  },
+  "startup": {
+    "default": "last manually selected mode",
+    "orderedFallback": true,
+    "actualBackendEntryTested": true,
+    "actualWindowsRebootTested": false
+  },
+  "liveNetworkLab": {
+    "status": "passed",
+    "date": "2026-11-14",
+    "timezone": "Asia/Shanghai",
+    "ordinaryUser": true,
+    "probeElevated": 0,
+    "elevatedComponent": "Independent guardian/controller for temporary DHCP and exact rollback only; auth helpers via existing Explorer token",
+    "cases": [
+      {
+        "run": 38,
+        "name": "fresh-web",
+        "passed": true,
+        "restored": true,
+        "ordinaryUser": true,
+        "freshAccountStore": true,
+        "noImportedConfiguration": true,
+        "packageFields": [
+          "balance",
+          "periodicFee",
+          "nextChargeOrLabelledEstimate"
+        ],
+        "case": {
+          "phase": "native_credential_probe",
+          "profile_store": "fresh-wireless-web",
+          "passed": true,
+          "authentication": true,
+          "preexisting_network": false,
+          "internet": true,
+          "package_balance": true,
+          "clean_terminal": true
+        },
+        "evidence": "run-38/result.json"
+      },
+      {
+        "run": 39,
+        "name": "startup-1x-recovery",
+        "passed": true,
+        "restored": true,
+        "ordinaryUser": true,
+        "freshAccountStore": true,
+        "noImportedConfiguration": true,
+        "packageFields": [
+          "balance",
+          "periodicFee",
+          "nextChargeOrLabelledEstimate"
+        ],
+        "case": {
+          "phase": "native_credential_probe",
+          "profile_store": "backend-1x",
+          "passed": true,
+          "authentication": true,
+          "preexisting_network": false,
+          "internet": true,
+          "crash_recovery": true,
+          "recovery_internet": true,
+          "package_balance": true,
+          "clean_terminal": true
+        },
+        "evidence": "run-39/result.json"
+      },
+      {
+        "run": 40,
+        "name": "startup-web-network-available-recovery",
+        "passed": true,
+        "restored": true,
+        "ordinaryUser": true,
+        "freshAccountStore": true,
+        "noImportedConfiguration": true,
+        "packageFields": [
+          "balance",
+          "periodicFee",
+          "nextChargeOrLabelledEstimate"
+        ],
+        "case": {
+          "phase": "native_credential_probe",
+          "profile_store": "backend-web",
+          "passed": true,
+          "authentication": false,
+          "preexisting_network": true,
+          "internet": true,
+          "crash_recovery": true,
+          "recovery_internet": true,
+          "package_balance": true,
+          "clean_terminal": true
+        },
+        "evidence": "run-40/result.json"
+      },
+      {
+        "run": 41,
+        "name": "fresh-web-repeat",
+        "passed": true,
+        "restored": true,
+        "ordinaryUser": true,
+        "freshAccountStore": true,
+        "noImportedConfiguration": true,
+        "packageFields": [
+          "balance",
+          "periodicFee",
+          "nextChargeOrLabelledEstimate"
+        ],
+        "case": {
+          "phase": "native_credential_probe",
+          "profile_store": "fresh-wireless-web",
+          "passed": true,
+          "authentication": true,
+          "preexisting_network": false,
+          "internet": true,
+          "package_balance": true,
+          "clean_terminal": true
+        },
+        "evidence": "run-41/result.json"
+      }
+    ],
+    "independentPostChecks": {
+      "passed": 13,
+      "total": 13,
+      "realExplorerUserContext": true
+    },
+    "resultEvidence": "source/docs/network-delivery-0.12.0/acceptance.json",
+    "restorationEvidence": "source/docs/network-delivery-0.12.0/final-state.json",
+    "report": "source/docs/Network-Delivery-Results-0.12.0.md",
+    "productionInstallationReplaced": false,
+    "originalWiredClientKeptRunning": true,
+    "wiredAuthenticationRehandedOffThisRound": false,
+    "priorWiredProof": "source/docs/Network-Delivery-Results-20261114.md"
+  },
+  "notVerified": [
+    "Actual Windows reboot, long-duration stability, roaming, sleep/resume and hotplug.",
+    "Other computers, Windows versions or campus access points.",
+    "Real password changes, campus pause/resume mutations and working device details when school reports query failure.",
+    "Complete live SAM extension round trip this round.",
+    "Live RSA-encrypted Portal branch; observed metadata required no RSA.",
+    "All existing native UI flows; five startup/mini checks repeated on final build."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}
