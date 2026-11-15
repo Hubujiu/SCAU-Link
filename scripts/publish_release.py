@@ -59,6 +59,20 @@ def main():
         if value['tag']!=tag or value['sha256']!=sha(installer) or value['size']!=installer.stat().st_size:
             raise SystemExit('Signed update metadata mismatch')
         assets.extend([manifest,signature])
+        if tuple(map(int,args.version.split('.'))) >= (0,14,0):
+            live=out/'SCAU-Link-live.json';live_signature=out/'SCAU-Link-live.sig'
+            Ed25519PublicKey.from_public_bytes(key).verify(live_signature.read_bytes(),live.read_bytes())
+            details=json.loads(live.read_bytes())
+            filename=f'SCAU-Link-{args.version}-Live-x64-preview.bin';capsule=out/filename
+            if details['tag']!=tag or details['installerSha256']!=sha(installer) or details['filename']!=filename or \
+               details['sha256']!=sha(capsule) or details['size']!=capsule.stat().st_size:
+                raise SystemExit('Live update metadata differs from the verified release')
+            stage=out/f'scau-link-{args.version}-win-x64-preview'
+            for name,digest in details['protected'].items():
+                if name not in {'scau-auth.exe','msvcp140.dll','msvcp140_atomic_wait.dll','vcruntime140.dll','vcruntime140_1.dll'} or sha(stage/name)!=digest:
+                    raise SystemExit('Unexpected live compatibility file')
+            if len(details['protected'])!=5:raise SystemExit('Incomplete live compatibility metadata')
+            assets.extend([live,live_signature,capsule])
     public_report=out/f'SCAU-Link-{args.version}-verification.json';shutil.copy2(verification,public_report);assets.append(public_report)
     sums=out/f'SCAU-Link-{args.version}-SHA256SUMS.txt'
     sums.write_text(''.join(sha(path)+'  '+path.name+'\n' for path in assets),encoding='ascii');assets.append(sums)

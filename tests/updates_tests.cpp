@@ -44,6 +44,34 @@ std::string release(std::string version="0.14.0",bool preview=true) {
     }
     return out+"]}";
 }
+std::string live_metadata(const std::filesystem::path& installation,std::string_view capsule,std::string_view installer) {
+    std::string values="{";
+    for(const auto* name:protected_files) {
+        if(values.back()!='{')values+=',';
+        std::string key;for(wchar_t ch:std::wstring_view(name))key+=static_cast<char>(ch);
+        values+="\""+key+"\":\""+sha(read(installation/name))+"\"";
+    }
+    return "{\"schema\":1,\"version\":\"0.14.0\",\"tag\":\"v0.14.0-preview\",\"installerSha256\":\""+sha(installer)+
+        "\",\"filename\":\"SCAU-Link-0.14.0-Live-x64-preview.bin\",\"url\":\"https://github.com/Hubujiu/SCAU-Link/releases/download/v0.14.0-preview/SCAU-Link-0.14.0-Live-x64-preview.bin\",\"size\":"+
+        std::to_string(capsule.size())+",\"sha256\":\""+sha(capsule)+"\",\"protected\":"+values+"}}";
+}
+std::string capsule(std::string_view replacement,bool bad_path=false) {
+    std::string out="SCAULIV1";
+    const auto number=[&](std::uint64_t value,unsigned count){for(unsigned i=0;i<count;++i)out+=char((value>>(i*8))&255);};
+    number(live_files.size(),4);
+    for(const auto* name:live_files) {
+        std::string path;for(wchar_t ch:std::wstring_view(name))path+=static_cast<char>(ch);
+        if(bad_path&&path=="docs/source.zip")path="../accounts.dat";
+        const std::string bytes=path.ends_with(".exe")?std::string(replacement):"new source or documentation";
+        number(path.size(),2);number(bytes.size(),8);out+=path;out+=bytes;
+    }
+    return out;
+}
+void copy_runtime(const std::filesystem::path& target) {
+    wchar_t system[MAX_PATH]{};require(GetSystemDirectoryW(system,MAX_PATH)!=0,"system runtime directory");
+    for(std::size_t i=1;i<protected_files.size();++i)
+        std::filesystem::copy_file(std::filesystem::path(system)/protected_files[i],target/protected_files[i]);
+}
 struct Temp {
     std::filesystem::path path;
     Temp(){path=std::filesystem::temp_directory_path()/(L"scau-update-test-"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(GetTickCount64()));require(!std::filesystem::exists(path),"fresh test directory");std::filesystem::create_directories(path);}
@@ -89,6 +117,10 @@ void primitives(){
     require(choice&&choice->tag==L"v0.14.0","select stable in mixed releases");
     choice=select_release("["+release("0.13.0",false)+"]",L"0.13.0",true);require(choice&&!choice->preview,"preview to same numeric stable");
     for(bool running:{false,true})for(bool busy:{false,true})for(bool idle:{false,true})require(can_install(running,busy,idle)==(!running&&!busy&&idle),"idle installation gate");
+    for(Impact impact:{Impact::MayDisconnect,Impact::PreserveConnection})for(bool connected:{false,true})
+        for(bool auth_busy:{false,true})for(bool interaction:{false,true})for(bool idle:{false,true})
+            require(can_install(impact,connected,auth_busy,interaction,idle)==(idle&&!auth_busy&&!interaction&&
+                (!connected||impact==Impact::PreserveConnection)),"live/core automatic installation gate");
     const auto args=installer_arguments(std::filesystem::path(L"D:\\安装 路径\\SCAU Link"));require(args.find(L"\"/DIR=D:\\安装 路径\\SCAU Link\"")!=args.npos,"quoted native custom directory");
 }
 void managers(){
@@ -135,10 +167,82 @@ void handoff(bool fail){
     require(std::filesystem::exists(installation/L"installer-ran.ok"),"setup used custom directory");
     require(read(cache/L"install-result.json").find(fail?"\"exitCode\":1603":"\"exitCode\":0")!=std::string::npos,"setup success/failure recorded");
 }
+void live_handoff(unsigned mode) {
+    std::cout<<"live installation fixture "<<mode<<'\n'<<std::flush;
+    Temp temp;const auto installation=temp.path/L"不断网 安装目录",cache=temp.path/L"updates/pending";
+    std::filesystem::create_directories(installation);std::filesystem::create_directories(cache);
+    if(mode!=3)std::filesystem::create_directories(installation/L"docs");
+    const auto bin=executable().parent_path();
+    std::filesystem::copy_file(executable(),installation/L"SCAU-Link.exe");
+    std::filesystem::copy_file(executable(),installation/L"scau-auth.exe");
+    std::filesystem::copy_file(bin/L"update-helper-fixture.exe",installation/L"scau-update.exe");
+    copy_runtime(installation);
+    if(mode!=3)for(const auto* name:live_files)if(std::wstring_view(name).starts_with(L"docs/"))write(installation/name,"old documentation");
+    const auto installer=read(bin/L"update-installer-fixture.exe"),replacement=read(bin/L"update-helper-fixture.exe");
+    const auto payload=manifest(installer),bundle=capsule(replacement,mode==2),meta=live_metadata(installation,bundle,installer);
+    auto full=verify_manifest(payload,sign(payload),L"v0.14.0-preview",true,update_fixture_public);require(bool(full),"full fixture manifest");
+    auto live=verify_live_manifest(meta,sign(meta),*full,update_fixture_public);require(bool(live),"signed live compatibility manifest");
+    require(!verify_live_manifest(meta+" ",sign(meta),*full,update_fixture_public),"tampered compatibility manifest rejected");
+    auto other=*full;other.sha256=sha("other installer");
+    require(!verify_live_manifest(meta,sign(meta),other,update_fixture_public),"compatibility cannot be transplanted across installers");
+    require(live_compatible(installation,*live),"core and local runtimes match");
+    auto mismatch=*live;mismatch.protected_hashes[0]=sha("new core");
+    require(!live_compatible(installation,mismatch),"core change requires disconnect path");
+    mismatch=*live;mismatch.protected_hashes[1]=sha("new runtime");
+    require(!live_compatible(installation,mismatch),"runtime change requires disconnect path");
+    write(cache/L"SCAU-Link-update.json",payload);write(cache/L"SCAU-Link-update.sig",sign(payload));
+    write(cache/L"SCAU-Link-live.json",meta);write(cache/L"SCAU-Link-live.sig",sign(meta));
+    write(cache/L"SCAU-Link-0.14.0-Live-x64-preview.bin",bundle);
+    std::array<std::string,6> previous;
+    for(std::size_t i=0;i<live_files.size();++i)previous[i]=read(installation/live_files[i]);
+    const auto core_stamp=std::filesystem::last_write_time(installation/L"scau-auth.exe");
+    PROCESS_INFORMATION core{},parent{};
+    require(spawn(installation/L"scau-auth.exe",L"--live-core \""+installation.native()+L"\"",core),"start isolated persistent core");
+    require(wait_for([&]{return std::filesystem::exists(installation/L"core-ready.ok");}),"isolated core ready");
+    require(spawn(installation/L"SCAU-Link.exe",L"--live-parent \""+installation.native()+L"\" \""+cache.native()+L"\" "+std::to_wstring(mode),parent),"start live-update desktop fixture");
+    const bool completed=wait_for([&]{return std::filesystem::exists(installation/L"live-complete.ok");},15000);
+    require(completed,"live transaction completed");
+    const bool success=mode==0||mode==3;
+    require(read(installation/L"live-complete.ok")== (success?"applied":"rejected"),"correct live transaction outcome");
+    require(WaitForSingleObject(core.hProcess,0)==WAIT_TIMEOUT,"same core process stays running");
+    require(WaitForSingleObject(parent.hProcess,0)==WAIT_TIMEOUT,"same desktop process stays running");
+    require(read(installation/L"scau-auth.exe")==read(executable())&&std::filesystem::last_write_time(installation/L"scau-auth.exe")==core_stamp,"core file never replaced");
+    require(!std::filesystem::exists(installation/L"installer-ran.ok"),"no installer executed during live patch");
+    if(success)require(read(installation/L"SCAU-Link.exe")==replacement,"new desktop bytes installed while old desktop lives");
+    else for(std::size_t i=0;i<live_files.size();++i)require(read(installation/live_files[i])==previous[i],"failure leaves original files restored");
+    cleanup_live_backups(installation);
+    require(WaitForSingleObject(core.hProcess,0)==WAIT_TIMEOUT&&WaitForSingleObject(parent.hProcess,0)==WAIT_TIMEOUT,"cleanup does not interrupt mapped processes");
+    write(installation/L"live-release.ok","1");write(installation/L"core-release.ok","1");
+    require(WaitForSingleObject(parent.hProcess,5000)==WAIT_OBJECT_0&&WaitForSingleObject(core.hProcess,5000)==WAIT_OBJECT_0,"fixtures leave only on explicit release");
+    CloseHandle(parent.hThread);CloseHandle(parent.hProcess);CloseHandle(core.hThread);CloseHandle(core.hProcess);
+    cleanup_live_backups(installation);
+    require(std::none_of(std::filesystem::directory_iterator(installation),std::filesystem::directory_iterator{},[](const auto& item){return item.path().filename().native().starts_with(L".scau-live-");}),"transaction backups cleaned after old desktop exits");
+    require(live_compatible(installation,*live),"cleanup preserves authentication files");
+}
 } // namespace
 int wmain(int argc,wchar_t** argv){
     const HRESULT initialized=CoInitializeEx(nullptr,COINIT_MULTITHREADED);
     struct Apartment {HRESULT value;~Apartment(){if(SUCCEEDED(value))CoUninitialize();}} apartment{initialized};
+    if(argc==3&&std::wstring_view(argv[1])==L"--live-core") {
+        const std::filesystem::path installation(argv[2]);write(installation/L"core-ready.ok","1");
+        return wait_for([&]{return std::filesystem::exists(installation/L"core-release.ok");},25000)?0:91;
+    }
+    if(argc==5&&std::wstring_view(argv[1])==L"--live-parent") {
+        const std::filesystem::path installation(argv[2]),cache(argv[3]);
+        Options config;config.directory=cache.parent_path();config.installation=installation;config.current=L"0.13.0";config.public_key=update_fixture_public;
+        config.fetch=[](auto,auto,const auto&,const auto&){return unsigned(ERROR_NETWORK_UNREACHABLE);};
+        HANDLE locked=INVALID_HANDLE_VALUE;
+        if(std::wstring_view(argv[4])==L"1")locked=CreateFileW((installation/L"docs/README.txt").c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,0,nullptr);
+        Manager manager(std::move(config));
+        if(!wait_for([&]{return manager.snapshot().phase==Phase::Ready;}))return 92;
+        if(manager.snapshot().impact!=Impact::PreserveConnection||!manager.install_now())return 93;
+        const bool success=std::wstring_view(argv[4])==L"0"||std::wstring_view(argv[4])==L"3";
+        if(!wait_for([&]{const auto p=manager.snapshot().phase;return p==Phase::Applied||p==Phase::Failed;},12000))return 94;
+        write(installation/L"live-complete.ok",manager.snapshot().phase==Phase::Applied?"applied":"rejected");
+        if(locked!=INVALID_HANDLE_VALUE)CloseHandle(locked);
+        if(success&&!std::filesystem::exists(installation/L"live-complete.ok"))return 95;
+        return wait_for([&]{return std::filesystem::exists(installation/L"live-release.ok");},15000)?0:96;
+    }
     if(argc==2&&std::wstring_view(argv[1])==L"--startup"){write(std::filesystem::current_path()/L"restarted.ok","1");return 0;}
     if(argc==4&&(std::wstring_view(argv[1])==L"--handoff-parent"||std::wstring_view(argv[1])==L"--handoff-parent-silent")) {
         const std::filesystem::path installation(argv[2]),cache(argv[3]);Options config;config.directory=cache.parent_path();config.installation=installation;
@@ -149,6 +253,6 @@ int wmain(int argc,wchar_t** argv){
         if(!wait_for([&]{return std::filesystem::exists(installation/L"release-parent.ok");},12000))return 89;
         write(installation/L"parent-exiting.ok","1");return 0;
     }
-    try{std::cout<<"update primitives\n"<<std::flush;primitives();managers();handoff(false);handoff(true);std::cout<<checks<<" update checks passed\n";return 0;}
+    try{std::cout<<"update primitives\n"<<std::flush;primitives();managers();handoff(false);handoff(true);live_handoff(0);live_handoff(1);live_handoff(2);live_handoff(3);std::cout<<checks<<" update checks passed\n";return 0;}
     catch(const std::exception& error){std::cerr<<"Update check failed: "<<error.what()<<'\n';return 1;}
 }

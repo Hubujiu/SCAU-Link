@@ -81,7 +81,7 @@ source_files.extend(root / 'docs' / name for name in [
 source_files.extend(p for p in (root / 'docs' / f'network-delivery-{version}').rglob('*')
                     if p.is_file() and p.suffix.lower() in {'.json', '.jsonl', '.txt'})
 source_files.extend(p for p in proof.iterdir() if p.is_file())
-source_files.extend(root / 'docs' / name for name in ['Updates-0.13.0.md',
+source_files.extend(root / 'docs' / name for name in ['Updates-0.13.0.md','Updates-0.14.0.md',
     'SCAU-First-Run-0.12.0.md','Network-Delivery-Results-0.12.0.md','validation-0.12.0.json'])
 source_files.extend(p for p in (root/'docs/network-delivery-0.12.0').rglob('*')
                     if p.is_file() and p.suffix.lower() in {'.json','.jsonl','.txt'})

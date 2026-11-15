@@ -174,6 +174,7 @@ class App {
     std::unique_ptr<Backend> backend;
     std::unique_ptr<updates::Manager> updater;
     updates::Snapshot update_snapshot;
+    bool update_confirming=false,update_waiting_disconnect=false;
     bool demo_update_available = false, demo_update_ready = false, demo_update_live = false;
     Settings settings{};
     Status status = Status::Loading;
@@ -217,13 +218,17 @@ class App {
     RECT full_bounds{};
     bool full_bounds_saved = false;
     bool update_installing() const {
-        return update_snapshot.phase == updates::Phase::Starting || update_snapshot.phase == updates::Phase::InstallQueued;
+        return update_waiting_disconnect || update_snapshot.phase == updates::Phase::Starting || update_snapshot.phase == updates::Phase::InstallQueued;
+    }
+    bool update_interaction_busy() const {
+        return account_editor || account_service || password_view || campus_busy || password_busy ||
+            campus_confirming || pending_credential || pending_settings || account_pointer.active() || popup.visible() || exiting || update_confirming;
     }
     bool update_can_install(bool idle) const {
-        const bool running = !initialized || !backend || backend->running() || connected_or_busy(status) || status == Status::Stopping;
-        const bool busy = account_editor || account_service || password_view || campus_busy || password_busy ||
-            campus_confirming || pending_credential || pending_settings || account_pointer.active() || popup.visible() || exiting;
-        return updates::can_install(running,busy,idle);
+        const bool running = backend && (backend->running() || status==Status::Online);
+        const bool authenticating = !initialized || !backend || status==Status::Loading || status==Status::Connecting ||
+            status==Status::Recovering || status==Status::Waiting || status==Status::Stopping;
+        return updates::can_install(update_snapshot.impact,running,authenticating,update_interaction_busy(),idle);
     }
     void refresh_update_controls() {
         using updates::Phase;
@@ -237,14 +242,19 @@ class App {
             caption=L"下载 "+std::to_wstring(update_snapshot.progress)+L"%";
             state=L"正在下载 "+update_snapshot.version;enabled=false;break;
         case Phase::Ready:
-            caption=L"安装并重启";state=L"已下载 "+update_snapshot.version;
-            enabled=update_can_install(true) && !demo_update_live;
-            if(!enabled)state+=L" · 断开后安装";
+            caption=update_snapshot.impact==updates::Impact::PreserveConnection?L"安装更新":L"安装并重启";
+            state=L"已下载 "+update_snapshot.version;
+            enabled=!demo_update_live&&!update_interaction_busy()&&
+                (update_can_install(true)||(update_snapshot.impact==updates::Impact::MayDisconnect&&initialized&&backend));
             break;
+        case Phase::Applied: caption=L"已更新";state=update_snapshot.version+L" · 下次启动生效";enabled=false;break;
         case Phase::Starting: case Phase::InstallQueued: caption=L"准备安装";enabled=false;break;
         case Phase::Failed: state+=L" · 更新失败（"+std::to_wstring(update_snapshot.error)+L"）";break;
         default:break;
         }
+        if(update_snapshot.phase==Phase::Available||update_snapshot.phase==Phase::Downloading||update_snapshot.phase==Phase::Ready)
+            state+=update_snapshot.impact==updates::Impact::PreserveConnection?L" · 无需断网":L" · 更新时可能断网";
+        if(update_waiting_disconnect){caption=L"准备安装";state=L"正在断开连接";enabled=false;}
         text(Preferences,CheckUpdate,caption);text(Preferences,UpdateStatus,state);
         if(auto button=ctrl(Preferences,CheckUpdate))EnableWindow(button,enabled);
         if(pages[Preferences].window)InvalidateRect(pages[Preferences].window,nullptr,FALSE);
@@ -256,6 +266,13 @@ class App {
     }
     void update_tick() {
         if(!updater||!initialized||exiting||options.demo)return;
+        if(update_waiting_disconnect) {
+            if(update_can_install(true)) {
+                update_waiting_disconnect=false;
+                if(updater->install_now())update_changed();
+            }
+            return;
+        }
         const bool idle=updates::system_idle();
         updater->tick(idle);
         if(update_snapshot.phase==updates::Phase::Ready && update_can_install(idle)) {
@@ -273,7 +290,18 @@ class App {
         if(!updater)return;
         if(update_snapshot.phase==Phase::Available)updater->download_now();
         else if(update_snapshot.phase==Phase::Ready) {
-            if(!options.demo && update_can_install(true))updater->install_now();
+            if(options.demo||!initialized||!backend||update_interaction_busy())return;
+            if(update_snapshot.impact==updates::Impact::MayDisconnect) {
+                update_confirming=true;
+                const int answer=MessageBoxW(window,L"更新时可能断网。\n继续更新？",L"安装更新",MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON2);
+                update_confirming=false;
+                if(answer!=IDYES){refresh_update_controls();return;}
+                // Automatic updates never request disconnection.
+                if(backend->running()||connected_or_busy(status)||status==Status::Stopping) {
+                    update_waiting_disconnect=true;backend->disconnect();refresh_update_controls();return;
+                }
+            }
+            if(update_can_install(true))updater->install_now();
         } else updater->check_now();
         update_changed();
     }
@@ -1766,6 +1794,7 @@ class App {
         }
         refresh_visible();
         request_visible_packages();
+        if(update_waiting_disconnect)update_tick();
         if (exiting && !backend->running())
             DestroyWindow(window);
     }

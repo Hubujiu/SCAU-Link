@@ -53,6 +53,9 @@ bool boolean(const JsonObject& object,const wchar_t* name) {
         throw ERROR_INVALID_DATA;
     return object.GetNamedBoolean(name);
 }
+bool valid_digest(std::string_view value) {
+    return value.size()==64&&std::all_of(value.begin(),value.end(),[](char ch){return (ch>='0'&&ch<='9')||(ch>='a'&&ch<='f');});
+}
 std::wstring prefix() { return std::wstring(repository_url)+L"/releases/download/"; }
 std::wstring tag_for(std::wstring_view version,bool preview) {
     return L"v"+std::wstring(version)+(preview?L"-preview":L"");
@@ -182,6 +185,8 @@ std::optional<Candidate> select_release(std::string_view json,std::wstring_view 
                     if(url!=prefix()+tag+L"/"+name)continue;
                     if(name==L"SCAU-Link-update.json")candidate.manifest_url=url;
                     if(name==L"SCAU-Link-update.sig")candidate.signature_url=url;
+                    if(name==L"SCAU-Link-live.json")candidate.live_url=url;
+                    if(name==L"SCAU-Link-live.sig")candidate.live_signature_url=url;
                 }
                 if(candidate.manifest_url.empty()||candidate.signature_url.empty())continue;
                 selected=version;best=std::move(candidate);
@@ -217,6 +222,37 @@ std::optional<Manifest> verify_manifest(std::string_view payload,std::string_vie
         out.size=static_cast<std::uint64_t>(size);return out;
     } catch(...) {return {};}
 }
+std::optional<LiveManifest> verify_live_manifest(std::string_view payload,std::string_view signature,
+        const Manifest& installer,std::string_view public_key_hex) {
+    try {
+        const auto public_key=unhex(public_key_hex);
+        if(payload.empty()||payload.size()>8192||signature.size()!=64||public_key.size()!=32)return {};
+        std::unique_ptr<EVP_PKEY,decltype(&EVP_PKEY_free)> key(EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519,
+            nullptr,public_key.data(),public_key.size()),EVP_PKEY_free);
+        std::unique_ptr<EVP_MD_CTX,decltype(&EVP_MD_CTX_free)> context(EVP_MD_CTX_new(),EVP_MD_CTX_free);
+        if(!key||!context||EVP_DigestVerifyInit(context.get(),nullptr,nullptr,nullptr,key.get())!=1||
+           EVP_DigestVerify(context.get(),reinterpret_cast<const unsigned char*>(signature.data()),signature.size(),
+               reinterpret_cast<const unsigned char*>(payload.data()),payload.size())!=1)return {};
+        const auto object=JsonObject::Parse(wide(payload));
+        if(object.Size()!=9||object.GetNamedNumber(L"schema")!=1||field(object,L"version")!=installer.version||
+           field(object,L"tag")!=installer.tag||narrow(field(object,L"installerSha256"))!=installer.sha256)return {};
+        LiveManifest out;out.bundle=installer;
+        const auto expected=L"SCAU-Link-"+installer.version+L"-Live-x64"+(installer.preview?L"-preview":L"")+L".bin";
+        out.bundle.filename=field(object,L"filename");out.bundle.url=field(object,L"url");
+        out.bundle.sha256=narrow(field(object,L"sha256"));
+        const double size=object.GetNamedNumber(L"size");
+        if(out.bundle.filename!=expected||out.bundle.url!=prefix()+installer.tag+L"/"+expected||
+           !valid_digest(out.bundle.sha256)||size<12||size>maximum_installer_size||size!=static_cast<std::uint64_t>(size))return {};
+        out.bundle.size=static_cast<std::uint64_t>(size);
+        const auto protected_values=object.GetNamedObject(L"protected");
+        if(protected_values.Size()!=protected_files.size())return {};
+        for(std::size_t i=0;i<protected_files.size();++i) {
+            out.protected_hashes[i]=narrow(field(protected_values,protected_files[i]));
+            if(!valid_digest(out.protected_hashes[i]))return {};
+        }
+        return out;
+    }catch(...){return {};}
+}
 bool verify_installer(const std::filesystem::path& file,const Manifest& manifest) {
     try {
         if(manifest.size<1||manifest.size>maximum_installer_size||std::filesystem::file_size(file)!=manifest.size)return false;
@@ -232,6 +268,9 @@ bool verify_installer(const std::filesystem::path& file,const Manifest& manifest
     } catch(...) {return false;}
 }
 bool can_install(bool running,bool interaction,bool idle) noexcept {return !running&&!interaction&&idle;}
+bool can_install(Impact impact,bool connected,bool authentication_busy,bool interaction,bool idle) noexcept {
+    return idle&&!authentication_busy&&!interaction&&(!connected||impact==Impact::PreserveConnection);
+}
 bool system_idle(DWORD milliseconds) noexcept {
     LASTINPUTINFO info{sizeof(info)};
     return GetLastInputInfo(&info)&&DWORD(GetTickCount()-info.dwTime)>=milliseconds;
@@ -297,14 +336,15 @@ Manager::Manager(Options options):options_(std::move(options)) {
 Manager::~Manager() {cancel_=true;cv_.notify_all();if(worker_.joinable())worker_.join();}
 Snapshot Manager::snapshot() const {std::lock_guard lock(mutex_);return snapshot_;}
 std::filesystem::path Manager::cache() const {return options_.directory/L"pending";}
+const Manifest& Manager::artifact() const {return impact_==Impact::PreserveConnection?live_->bundle:*manifest_;}
 void Manager::set(Phase phase,unsigned error,unsigned progress) {
     {std::lock_guard lock(mutex_);snapshot_.phase=phase;snapshot_.error=error;snapshot_.progress=progress;
-        if(manifest_)snapshot_.version=manifest_->version;}
+        snapshot_.impact=impact_;if(manifest_)snapshot_.version=manifest_->version;}
     if(options_.changed)options_.changed();
 }
 bool Manager::enqueue(Command command) {
     {std::lock_guard lock(mutex_);
-        if(cancel_||command_!=Command::None||busy(snapshot_.phase))return false;
+        if(cancel_||command_!=Command::None||busy(snapshot_.phase)||snapshot_.phase==Phase::Applied)return false;
         if(command==Command::Download&&snapshot_.phase!=Phase::Available)return false;
         if(command==Command::Install&&snapshot_.phase!=Phase::Ready)return false;
         command_=command;snapshot_.phase=command==Command::Check?Phase::Checking:
@@ -318,10 +358,11 @@ void Manager::tick(bool idle) {
     if(!idle)return;
     const auto state=snapshot();
     if(state.phase==Phase::Available)download_now();
-    else if(!busy(state.phase)&&state.phase!=Phase::Ready&&now()>=next_check_)check_now();
+    else if(!busy(state.phase)&&state.phase!=Phase::Ready&&state.phase!=Phase::Applied&&now()>=next_check_)check_now();
 }
 void Manager::work() {
     Apartment apartment;
+    cleanup_live_backups(options_.installation);
     // Cache verification is lazy and off the UI thread, including the installer hash.
     try {
         std::filesystem::create_directories(cache());
@@ -335,11 +376,23 @@ void Manager::work() {
             const auto tag=field(JsonObject::Parse(wide(payload_)),L"tag");
             auto pending=verify_manifest(payload_,signature_,tag,true,options_.public_key);
             if(pending&&(!pending->preview||options_.allow_preview)&&newer(*pending,options_.current,options_.allow_preview)) {
-                manifest_=std::move(pending);set(verify_installer(cache()/manifest_->filename,*manifest_)?Phase::Ready:Phase::Available);
+                manifest_=std::move(pending);
+                try {
+                    live_=verify_live_manifest(read(cache()/L"SCAU-Link-live.json",8192),read(cache()/L"SCAU-Link-live.sig",64),*manifest_,options_.public_key);
+                }catch(...){}
+                impact_=live_&&live_compatible(options_.installation,*live_)?Impact::PreserveConnection:Impact::MayDisconnect;
+                set(verify_installer(cache()/artifact().filename,artifact())?Phase::Ready:Phase::Available);
             } else if(pending) {
                 // Remove only filenames authenticated by our own manifest, after an
                 // upgrade (or when leaving the preview channel). No recursive deletion.
                 std::error_code ignored;
+                try {
+                    const auto previous=verify_live_manifest(read(cache()/L"SCAU-Link-live.json",8192),
+                        read(cache()/L"SCAU-Link-live.sig",64),*pending,options_.public_key);
+                    if(previous)std::filesystem::remove(cache()/previous->bundle.filename,ignored);
+                }catch(...){}
+                std::filesystem::remove(cache()/L"SCAU-Link-live.json",ignored);
+                std::filesystem::remove(cache()/L"SCAU-Link-live.sig",ignored);
                 std::filesystem::remove(cache()/pending->filename,ignored);
                 std::filesystem::remove(cache()/L"SCAU-Link-update.json",ignored);
                 std::filesystem::remove(cache()/L"SCAU-Link-update.sig",ignored);
@@ -373,23 +426,37 @@ void Manager::check() {
     if(!manifest||manifest->preview!=candidate->preview||!newer(*manifest,options_.current,options_.allow_preview))throw invalid_signature;
     if(manifest_&&parse_version(manifest_->version)>parse_version(manifest->version))throw ERROR_REVISION_MISMATCH;
     manifest_=std::move(manifest);payload_=payload;signature_=signature;
+    live_.reset();impact_=Impact::MayDisconnect;
+    if(!candidate->live_url.empty()||!candidate->live_signature_url.empty()) {
+        if(candidate->live_url.empty()||candidate->live_signature_url.empty())throw invalid_signature;
+        const auto live_payload=get(options_.fetch,candidate->live_url,8192,cancel_);
+        const auto live_signature=get(options_.fetch,candidate->live_signature_url,64,cancel_);
+        live_=verify_live_manifest(live_payload,live_signature,*manifest_,options_.public_key);
+        if(!live_)throw invalid_signature;
+        write(cache()/L"SCAU-Link-live.json",live_payload);write(cache()/L"SCAU-Link-live.sig",live_signature);
+        if(live_compatible(options_.installation,*live_))impact_=Impact::PreserveConnection;
+    }else {
+        std::error_code ignored;std::filesystem::remove(cache()/L"SCAU-Link-live.json",ignored);
+        std::filesystem::remove(cache()/L"SCAU-Link-live.sig",ignored);
+    }
     write(cache()/L"SCAU-Link-update.json",payload_);write(cache()/L"SCAU-Link-update.sig",signature_);
     next_check_=now()+21600;write(options_.directory/L"checked-at.txt",std::to_string(now()));
-    set(verify_installer(cache()/manifest_->filename,*manifest_)?Phase::Ready:Phase::Available);
+    set(verify_installer(cache()/artifact().filename,artifact())?Phase::Ready:Phase::Available);
 }
 void Manager::download() {
     if(!manifest_)throw ERROR_INVALID_DATA;
-    const auto final=cache()/manifest_->filename;auto temporary=final;temporary+=L".part";
+    const auto item=artifact();
+    const auto final=cache()/item.filename;auto temporary=final;temporary+=L".part";
     std::ofstream stream(temporary,std::ios::binary|std::ios::trunc);if(!stream)throw ERROR_WRITE_FAULT;
     std::uint64_t received=0;unsigned previous=101;
-    const auto error=options_.fetch(manifest_->url,static_cast<std::size_t>(manifest_->size),[&](const void* data,std::size_t size) {
-        if(cancel_||size>manifest_->size-received)return false;
+    const auto error=options_.fetch(item.url,static_cast<std::size_t>(item.size),[&](const void* data,std::size_t size) {
+        if(cancel_||size>item.size-received)return false;
         if(!stream.write(static_cast<const char*>(data),static_cast<std::streamsize>(size)))return false;
-        received+=size;const auto percentage=unsigned(received*100/manifest_->size);
+        received+=size;const auto percentage=unsigned(received*100/item.size);
         if(percentage!=previous){previous=percentage;set(Phase::Downloading,0,percentage);}return true;
     },cancel_);
     stream.flush();const bool written=bool(stream);stream.close();
-    if(error||!written||received!=manifest_->size||!verify_installer(temporary,*manifest_)) {
+    if(error||!written||received!=item.size||!verify_installer(temporary,item)) {
         std::error_code ignored;std::filesystem::remove(temporary,ignored);
         throw error?error:invalid_signature;
     }
@@ -397,7 +464,15 @@ void Manager::download() {
     set(Phase::Ready,0,100);
 }
 void Manager::install() {
-    if(!manifest_||!verify_installer(cache()/manifest_->filename,*manifest_))throw invalid_signature;
+    if(!manifest_)throw invalid_signature;
+    if(impact_==Impact::PreserveConnection) {
+        if(!live_||!live_compatible(options_.installation,*live_)) {
+            impact_=Impact::MayDisconnect;set(Phase::Available);return;
+        }
+        apply_live_bundle(options_.installation,cache()/live_->bundle.filename,*live_,cancel_);
+        set(Phase::Applied,0,100);return;
+    }
+    if(!verify_installer(cache()/manifest_->filename,*manifest_))throw invalid_signature;
     if(!start_install_helper(options_,*manifest_,cache(),cancel_))throw ERROR_INSTALL_FAILURE;
     set(Phase::InstallQueued);
 }

@@ -2,6 +2,8 @@
 import argparse
 import hashlib
 import json
+import shutil
+import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +20,7 @@ def main():
     parser.add_argument('--version')
     parser.add_argument('--channel', choices=['preview', 'stable'], default='preview')
     parser.add_argument('--private-key', type=Path, default=PRIVATE)
+    parser.add_argument('--with-live',action='store_true',help='Also sign a connection-preserving capsule; requires built installer payload.')
     args = parser.parse_args()
     if args.action == 'init':
         if args.private_key.exists() or PUBLIC.exists():
@@ -55,6 +58,30 @@ def main():
     target.write_bytes(payload)
     signature = target.with_suffix('.sig')
     signature.write_bytes(key.sign(payload))
+    if args.with_live:
+        stage=ROOT/'out'/f'scau-link-{args.version}-win-x64{suffix}'
+        files=[('scau-update.exe',stage/'scau-update.exe'),
+               ('docs/source.zip',ROOT/'build'/('installer-payload'+suffix)/'source.zip'),
+               ('docs/verification.json',stage/'verification.json'),
+               ('docs/README.txt',ROOT/'docs/installer-README.txt'),
+               ('docs/THIRD_PARTY_NOTICES.md',ROOT/'THIRD_PARTY_NOTICES.md'),
+               ('SCAU-Link.exe',stage/'SCAU-Link.exe')]
+        protected=['scau-auth.exe','msvcp140.dll','msvcp140_atomic_wait.dll','vcruntime140.dll','vcruntime140_1.dll']
+        capsule=args.installer.parent/f'SCAU-Link-{args.version}-Live-x64{suffix}.bin'
+        with capsule.open('wb') as output:
+            output.write(b'SCAULIV1'+struct.pack('<I',len(files)))
+            for name,path in files:
+                encoded=name.encode('ascii')
+                output.write(struct.pack('<HQ',len(encoded),path.stat().st_size)+encoded)
+                with path.open('rb') as source:shutil.copyfileobj(source,output,65536)
+        if capsule.stat().st_size>256*1024*1024:raise SystemExit('Live capsule exceeds native limit')
+        live=dict(schema=1,version=args.version,tag=tag,installerSha256=manifest['sha256'],filename=capsule.name,
+            url=f'https://github.com/Hubujiu/SCAU-Link/releases/download/{tag}/{capsule.name}',
+            size=capsule.stat().st_size,sha256=hashlib.sha256(capsule.read_bytes()).hexdigest(),
+            protected={name:hashlib.sha256((stage/name).read_bytes()).hexdigest() for name in protected})
+        live_payload=(json.dumps(live,sort_keys=True,separators=(',',':'))+'\n').encode()
+        (args.installer.parent/'SCAU-Link-live.json').write_bytes(live_payload)
+        (args.installer.parent/'SCAU-Link-live.sig').write_bytes(key.sign(live_payload))
     print(json.dumps(dict(manifest=str(target),signature=str(signature),version=args.version)))
 
 

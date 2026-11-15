@@ -1,0 +1,12 @@
+{
+  "version": "0.14.0",
+  "applicationHashes": {
+    "SCAU-Link.exe": "a1789810d8b69d39f3ef052e08282e57f4ba840967f00e3724b429697779cedf",
+    "scau-auth.exe": "4716aca37993cc6275da43df9d8a1feaf02b23a315c96a3caf53e3430d2eca13",
+    "scau-update.exe": "b16dc30088f0a324d769ab96b86929ce1344b4a2a7a5d4d56660ddcee5486e6f"
+  },
+  "authenticationSourceUnchanged": true,
+  "deterministicBuildEnabled": true,
+  "ctestPassed": 35,
+  "updateChecks": 267
+}

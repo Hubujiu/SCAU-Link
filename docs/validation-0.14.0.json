@@ -1,0 +1,61 @@
+{
+  "product": "SCAU Link",
+  "version": "0.14.0",
+  "releaseChannel": "preview",
+  "previewReason": "不断网文件替换已通过隔离进程检查；新增提示与确认框未实际点击，其他电脑和长时在线仍待验证",
+  "platform": "Windows x64",
+  "desktopSha256": "a1789810d8b69d39f3ef052e08282e57f4ba840967f00e3724b429697779cedf",
+  "authenticationSha256": "4716aca37993cc6275da43df9d8a1feaf02b23a315c96a3caf53e3430d2eca13",
+  "updaterSha256": "b16dc30088f0a324d769ab96b86929ce1344b4a2a7a5d4d56660ddcee5486e6f",
+  "automatedTests": {
+    "passed": 35,
+    "total": 35,
+    "updatesChecks": 267,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "blocked",
+    "reason": "Native update/status/confirmation clicks deferred after the earlier lock-screen foreground activation block; no UI clicks or screenshots claimed this round.",
+    "passed": 0,
+    "total": 0,
+    "executedOnThisBuild": 0,
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "update": {
+    "idleSeconds": 120,
+    "checkIntervalHours": 6,
+    "connectionPreserving": true,
+    "preserveRequiresIdenticalCoreAndFourRuntimeFiles": true,
+    "newUiTakesEffectOnNextLaunch": true,
+    "coreUpdateRequiresDisconnectConfirmationWhenOnline": true,
+    "automaticUpdateNeverDisconnects": true,
+    "signature": "Ed25519",
+    "installerDigest": "SHA-256",
+    "forcedProcessTermination": false
+  },
+  "authenticationEvidence": {
+    "authenticationSourceUnchanged": true,
+    "deterministicBuildEnabled": true,
+    "retestedThisRound": false
+  },
+  "isolatedLiveIntegration": {
+    "passed": true,
+    "cases": [
+      "mapped desktop and core survive replacement",
+      "mid-transaction file lock rolls back",
+      "invalid path rejected",
+      "cleanup with mapped image then after exit"
+    ],
+    "networkAuthenticationStarted": false
+  },
+  "publicReleaseProbe": {
+    "status": "after publication",
+    "asset": "SCAU-Link-0.14.0-live-update-verification.json"
+  },
+  "notVerified": [
+    "Native update status and disconnect confirmation clicks.",
+    "New production campus authentication, actual Windows reboot, other computers and long-duration stability."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}

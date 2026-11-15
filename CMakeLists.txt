@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.22)
-project(ScauNativeAuth VERSION 0.13.0 LANGUAGES C CXX RC)
+project(ScauNativeAuth VERSION 0.14.0 LANGUAGES C CXX RC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(MSVC)
+  # Stable core bytes are needed to recognize a UI-only update. Match the
+  # deterministic toolchain mode used by Microsoft's Windows App SDK.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Brepro>)
+  add_link_options(/Brepro)
+endif()
 add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS _WIN32_WINNT=0x0A00 WINVER=0x0A00)
 file(GLOB HASH_SOURCES CONFIGURE_DEPENDS third_party/minieap_hashes/*.c)
 add_library(scau_protocol STATIC src/protocol.cpp src/profile_store.cpp src/maintenance.cpp src/recovery.cpp src/failure.cpp src/selfservice_crypto.cpp src/sam_crypto.cpp src/sam.cpp src/sam_runtime.cpp ${HASH_SOURCES})
@@ -27,7 +33,7 @@ if(NOT SCAU_UPDATE_KEY_LENGTH EQUAL 64 OR SCAU_UPDATE_PUBLIC_KEY MATCHES "[^0-9a
   message(FATAL_ERROR "Invalid update verification public key")
 endif()
 configure_file(src/desktop/release_config.hpp.in generated/release_config.hpp @ONLY)
-add_library(scau_updates STATIC src/desktop/updates.cpp src/desktop/update_handoff.cpp)
+add_library(scau_updates STATIC src/desktop/updates.cpp src/desktop/update_handoff.cpp src/desktop/update_live.cpp)
 target_include_directories(scau_updates PUBLIC src "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(scau_updates PUBLIC OpenSSL::Crypto winhttp bcrypt shell32 advapi32 ole32 user32 windowsapp runtimeobject)
 add_executable(scau-update WIN32 src/desktop/update_main.cpp)

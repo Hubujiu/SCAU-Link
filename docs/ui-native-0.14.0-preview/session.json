@@ -1,0 +1,5 @@
+{
+  "status": "blocked",
+  "reason": "Native update/status/confirmation clicks deferred after the earlier lock-screen foreground activation block; no UI clicks or screenshots claimed this round.",
+  "desktopSha256": "a1789810d8b69d39f3ef052e08282e57f4ba840967f00e3724b429697779cedf"
+}

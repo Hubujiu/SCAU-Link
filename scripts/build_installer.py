@@ -112,7 +112,7 @@ def source_archive(target):
     files.extend(p for p in (ROOT/'docs'/f'network-delivery-{version}').rglob('*')
                  if p.is_file() and p.suffix.lower() in {'.json','.jsonl','.txt'})
     files.extend(p for p in (ROOT/'docs'/f'ui-native-{version}-preview').iterdir() if p.is_file())
-    files.extend(ROOT/'docs'/p for p in ['Updates-0.13.0.md','SCAU-First-Run-0.12.0.md',
+    files.extend(ROOT/'docs'/p for p in ['Updates-0.13.0.md','Updates-0.14.0.md','SCAU-First-Run-0.12.0.md',
         'Network-Delivery-Results-0.12.0.md','validation-0.12.0.json'])
     files.extend(p for p in (ROOT/'docs/network-delivery-0.12.0').rglob('*')
                  if p.is_file() and p.suffix.lower() in {'.json','.jsonl','.txt'})
