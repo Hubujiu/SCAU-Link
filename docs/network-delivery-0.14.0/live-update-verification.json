@@ -1,0 +1,123 @@
+{
+  "version": "0.14.0",
+  "passed": true,
+  "sourceCommit": "7217c8b4ed416b697327b4d9c1a1681467644cb9",
+  "cloudChecks": {
+    "passed": true,
+    "ctestPassed": 35,
+    "url": "https://github.com/Hubujiu/SCAU-Link/actions/runs/43668273796"
+  },
+  "localChecks": {
+    "ctestPassed": 35,
+    "updateChecksPassed": 267
+  },
+  "cachedOrdinaryUserIntegration": {
+    "version": "0.14.0",
+    "passed": true,
+    "installerExecuted": false,
+    "campusAuthenticationStarted": false,
+    "test": "signed native bundle replacement with an explicitly suspended isolated core",
+    "offline": true,
+    "startedAt": "2026-11-15T02:30:42.925295+00:00",
+    "ordinaryUser": true,
+    "sameDesktopProcessContinues": true,
+    "sameMappedCoreContinues": true,
+    "protectedFilesUnchanged": true,
+    "installedApplicationHashes": {
+      "SCAU-Link.exe": "a1789810d8b69d39f3ef052e08282e57f4ba840967f00e3724b429697779cedf",
+      "scau-auth.exe": "4716aca37993cc6275da43df9d8a1feaf02b23a315c96a3caf53e3430d2eca13",
+      "scau-update.exe": "b16dc30088f0a324d769ab96b86929ce1344b4a2a7a5d4d56660ddcee5486e6f"
+    },
+    "downloadedBytes": 60795978,
+    "downloadedSha256": "7caed585592711c75dd1440c857f81b2f3f36208c4ba406be36c8b7426b5b0d9",
+    "nativeProbe": {
+      "passed": true,
+      "elevationObserved": true,
+      "elevated": false,
+      "phase": 9,
+      "error": 0,
+      "downloadRequested": true,
+      "installerExecuted": false,
+      "liveApplied": true
+    },
+    "originalNetworkProcessesUnchanged": true,
+    "originalApplicationsAccountsSettingsUnchanged": true,
+    "boundEthernetInternet": true,
+    "testCoreStoppedOnlyAfterVerification": true,
+    "completedAt": "2026-11-15T02:30:46.699319+00:00"
+  },
+  "publicReleaseIntegration": {
+    "version": "0.14.0",
+    "passed": true,
+    "installerExecuted": false,
+    "campusAuthenticationStarted": false,
+    "test": "signed native bundle replacement with an explicitly suspended isolated core",
+    "offline": false,
+    "startedAt": "2026-11-15T02:40:49.009074+00:00",
+    "ordinaryUser": true,
+    "sameDesktopProcessContinues": true,
+    "sameMappedCoreContinues": true,
+    "protectedFilesUnchanged": true,
+    "installedApplicationHashes": {
+      "SCAU-Link.exe": "a1789810d8b69d39f3ef052e08282e57f4ba840967f00e3724b429697779cedf",
+      "scau-auth.exe": "4716aca37993cc6275da43df9d8a1feaf02b23a315c96a3caf53e3430d2eca13",
+      "scau-update.exe": "b16dc30088f0a324d769ab96b86929ce1344b4a2a7a5d4d56660ddcee5486e6f"
+    },
+    "downloadedBytes": 60795978,
+    "downloadedSha256": "7caed585592711c75dd1440c857f81b2f3f36208c4ba406be36c8b7426b5b0d9",
+    "nativeProbe": {
+      "passed": true,
+      "elevationObserved": true,
+      "elevated": false,
+      "phase": 9,
+      "error": 0,
+      "downloadRequested": true,
+      "installerExecuted": false,
+      "liveApplied": true
+    },
+    "currentVersionProbe": {
+      "passed": true,
+      "elevationObserved": true,
+      "elevated": false,
+      "phase": 2,
+      "error": 0,
+      "downloadRequested": false,
+      "installerExecuted": false,
+      "liveApplied": false
+    },
+    "originalNetworkProcessesUnchanged": true,
+    "originalApplicationsAccountsSettingsUnchanged": true,
+    "boundEthernetInternet": true,
+    "testCoreStoppedOnlyAfterVerification": true,
+    "completedAt": "2026-11-15T02:41:09.808350+00:00"
+  },
+  "reproducibleCore": {
+    "fullCoreAndDependencyRebuild": true,
+    "passed": true,
+    "after": "4716aca37993cc6275da43df9d8a1feaf02b23a315c96a3caf53e3430d2eca13",
+    "before": "4716aca37993cc6275da43df9d8a1feaf02b23a315c96a3caf53e3430d2eca13"
+  },
+  "artifactAudit": {
+    "passed": true,
+    "version": "0.14.0",
+    "manifestSignaturesVerified": true,
+    "privateKeyAndPrivatePathsAbsent": true,
+    "installerSha256": "4fd95a59450302b12ef4c221b3496ac44de97e171998ed8e032dd6a8d7e56cbe",
+    "capsuleSha256": "7caed585592711c75dd1440c857f81b2f3f36208c4ba406be36c8b7426b5b0d9",
+    "capsuleBytes": 60795978,
+    "archivesScanned": {
+      "scau-link-0.14.0-win-x64-preview.zip": 293,
+      "source.zip": 279
+    }
+  },
+  "sourceAudit": {
+    "passed": true,
+    "stagedFiles": 381,
+    "publicSyntheticTlsFixtureExcluded": true,
+    "publisherPrivateIdentityAbsent": true
+  },
+  "nativeUiClicks": "not performed",
+  "realCampusAuthenticationRetested": false,
+  "existingCampusConnectionReplaced": false,
+  "packagedReportFrozenBeforePublication": true
+}
