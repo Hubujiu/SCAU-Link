@@ -85,6 +85,7 @@ int wmain(int argc, wchar_t** argv) {
         }
         credential.clear();
         std::cout << "{\"savedAccountAvailable\":true,\"queryState\":" << int(info.state)
+                  << ",\"queryStage\":" << int(diagnostics.stage) << ",\"interfaceIndex\":" << diagnostics.interface_index
                   << ",\"transportError\":" << diagnostics.transport_error << ",\"httpStatus\":" << diagnostics.http_status
                   << ",\"tlsConnected\":" << (diagnostics.tls_connected ? "true" : "false")
                   << ",\"tlsError\":" << diagnostics.tls_library_error

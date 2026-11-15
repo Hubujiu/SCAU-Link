@@ -1,0 +1,78 @@
+Internal ctest changing into directory: D:/Workspace/AiProjects/Ruijie/build
+Test project D:/Workspace/AiProjects/Ruijie/build
+      Start  1: updates-tests
+ 1/36 Test  #1: updates-tests ....................   Passed    2.82 sec
+      Start  2: desktop-tests
+ 2/36 Test  #2: desktop-tests ....................   Passed    0.04 sec
+      Start  3: logs-tests
+ 3/36 Test  #3: logs-tests .......................   Passed    0.01 sec
+      Start  4: account-pointer-tests
+ 4/36 Test  #4: account-pointer-tests ............   Passed    1.18 sec
+      Start  5: list-scrollbar-tests
+ 5/36 Test  #5: list-scrollbar-tests .............   Passed    1.78 sec
+      Start  6: accounts-tests
+ 6/36 Test  #6: accounts-tests ...................   Passed    0.08 sec
+      Start  7: desktop-backend-tests
+ 7/36 Test  #7: desktop-backend-tests ............   Passed    2.30 sec
+      Start  8: profile-store-tests
+ 8/36 Test  #8: profile-store-tests ..............   Passed    0.01 sec
+      Start  9: connection-setup-tests
+ 9/36 Test  #9: connection-setup-tests ...........   Passed    0.03 sec
+      Start 10: portal-auth-tests
+10/36 Test #10: portal-auth-tests ................   Passed    3.55 sec
+      Start 11: wireless-session-tests
+11/36 Test #11: wireless-session-tests ...........   Passed    0.04 sec
+      Start 12: wireless-connection-tests
+12/36 Test #12: wireless-connection-tests ........   Passed    0.08 sec
+      Start 13: password-change-tests
+13/36 Test #13: password-change-tests ............   Passed    0.01 sec
+      Start 14: wlan-8021x-tests
+14/36 Test #14: wlan-8021x-tests .................   Passed    0.03 sec
+      Start 15: protocol-tests
+15/36 Test #15: protocol-tests ...................   Passed    0.01 sec
+      Start 16: observation-tests
+16/36 Test #16: observation-tests ................   Passed    0.01 sec
+      Start 17: maintenance-tests
+17/36 Test #17: maintenance-tests ................   Passed    0.01 sec
+      Start 18: recovery-tests
+18/36 Test #18: recovery-tests ...................   Passed    0.01 sec
+      Start 19: failure-tests
+19/36 Test #19: failure-tests ....................   Passed    0.01 sec
+      Start 20: selfservice-crypto-tests
+20/36 Test #20: selfservice-crypto-tests .........   Passed    0.01 sec
+      Start 21: package-tests
+21/36 Test #21: package-tests ....................   Passed    0.01 sec
+      Start 22: billing-query-tests
+22/36 Test #22: billing-query-tests ..............   Passed    0.03 sec
+      Start 23: service-query-tests
+23/36 Test #23: service-query-tests ..............   Passed    0.07 sec
+      Start 24: http-response-tests
+24/36 Test #24: http-response-tests ..............   Passed    0.01 sec
+      Start 25: school-https-tests
+25/36 Test #25: school-https-tests ...............   Passed    0.41 sec
+      Start 26: exchange-tests
+26/36 Test #26: exchange-tests ...................   Passed    0.01 sec
+      Start 27: capture-tests
+27/36 Test #27: capture-tests ....................   Passed    0.03 sec
+      Start 28: supervisor-tests
+28/36 Test #28: supervisor-tests .................   Passed    1.13 sec
+      Start 29: sam-crypto-tests
+29/36 Test #29: sam-crypto-tests .................   Passed    0.01 sec
+      Start 30: sam-tests
+30/36 Test #30: sam-tests ........................   Passed    0.01 sec
+      Start 31: sam-runtime-tests
+31/36 Test #31: sam-runtime-tests ................   Passed    0.01 sec
+      Start 32: sam-udp-tests
+32/36 Test #32: sam-udp-tests ....................   Passed    0.01 sec
+      Start 33: controller-tests
+33/36 Test #33: controller-tests .................   Passed    0.80 sec
+      Start 34: package-ui-tests
+34/36 Test #34: package-ui-tests .................   Passed    1.85 sec
+      Start 35: summary-tests
+35/36 Test #35: summary-tests ....................   Passed    0.22 sec
+      Start 36: network-lab-tests
+36/36 Test #36: network-lab-tests ................   Passed   12.28 sec
+
+100% tests passed, 0 tests failed out of 36
+
+Total Test time (real) =  28.94 sec

@@ -67,7 +67,7 @@ std::vector<ConnectionAdapter> connection_adapters() {
             a->FirstGatewayAddress->Address.lpSockaddr->sa_family == AF_INET;
         for (auto* ip = a->FirstUnicastAddress; ip; ip = ip->Next)
             if (ip->Address.lpSockaddr && ip->Address.lpSockaddr->sa_family == AF_INET &&
-                ip->DadState != IpDadStateTentative && ip->DadState != IpDadStateDuplicate &&
+                ip->DadState == IpDadStatePreferred &&
                 reinterpret_cast<sockaddr_in*>(ip->Address.lpSockaddr)->sin_addr.s_addr) {
                 const auto* address = reinterpret_cast<sockaddr_in*>(ip->Address.lpSockaddr);
                 // Prefer a routable lease over an APIPA address during DHCP.

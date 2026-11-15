@@ -68,6 +68,7 @@ struct BackendOptions {
     bool demo_packages = false, demo_first_run = false, demo_wireless = false;
     bool demo_password_unknown = false, demo_password_rejected = false, demo_portal = false;
     bool demo_wireless_8021x = false;
+    bool demo_network_only = false;
     bool startup = false;
     unsigned startup_timeout_ms = 45000;
     std::vector<ConnectionMode> demo_failed_modes;
@@ -99,6 +100,7 @@ class Backend {
         CampusAction action = CampusAction::Pause;
         unsigned request = 0, epoch = 0;
         unsigned connection_epoch = 0;
+        unsigned interface_index = 0;
     };
     std::thread package_thread_;
     std::mutex package_mutex_;

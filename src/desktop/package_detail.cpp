@@ -47,6 +47,35 @@ std::wstring cell_text(std::wstring_view text) {
     }
     return trim(out);
 }
+std::optional<std::chrono::sys_days> billing_day(const std::optional<BillingDate>& date) {
+    if (!date || date->year < 1970 || date->year > 2199 || date->month < 1 || date->month > 12 ||
+        date->day < 1 || date->day > 31) return {};
+    const std::chrono::year_month_day value{std::chrono::year(date->year),
+        std::chrono::month(unsigned(date->month)), std::chrono::day(unsigned(date->day))};
+    if (!value.ok()) return {};
+    return std::chrono::sys_days(value);
+}
+std::optional<std::pair<std::chrono::sys_days, std::chrono::sys_days>> current_cycle(
+    const PackageInfo& info, std::chrono::year_month_day today) {
+    const auto start = billing_day(info.cycle_start), end = billing_day(info.cycle_end);
+    if (!today.ok() || !start || !end || info.cycle_start->seconds || info.cycle_end->seconds ||
+        *start > std::chrono::sys_days(today) || *end < std::chrono::sys_days(today)) return {};
+    return std::pair{*start, *end};
+}
+std::optional<std::chrono::sys_days> add_months(std::chrono::sys_days anchor, std::int64_t count) {
+    const std::chrono::year_month_day date{anchor};
+    const auto available = (2199 - int(date.year())) * 12 + 12 - int(unsigned(date.month()));
+    if (count < 0 || count > available) return {};
+    const auto month = date.year() / date.month() + std::chrono::months{int(count)};
+    const auto target = month / date.day();
+    // Clamp a month-end anniversary once, preserving the original anchor day.
+    return std::chrono::sys_days(target.ok() ? target : std::chrono::year_month_day{month / std::chrono::last});
+}
+std::optional<BillingDate> forecast_date(std::chrono::sys_days day) {
+    const std::chrono::year_month_day date{day};
+    if (!date.ok() || int(date.year()) < 1970 || int(date.year()) > 2199) return {};
+    return BillingDate{int(date.year()), int(unsigned(date.month())), int(unsigned(date.day())), {}};
+}
 } // namespace
 
 PackageInfo parse_package_detail(std::wstring_view html) {
@@ -122,7 +151,8 @@ PackageInfo parse_package_detail(std::wstring_view html) {
             }
         }
     }
-    if (info.balance || !info.name.empty() || info.expires || info.cycle_end) info.state = PackageState::Partial;
+    if (info.balance || !info.name.empty() || info.expires || info.cycle_end)
+        info.state = info.balance && package_fee(info) ? PackageState::Ready : PackageState::Partial;
     return info;
 }
 
@@ -134,18 +164,40 @@ std::optional<std::int64_t> package_fee(const PackageInfo& info) {
     return info.monthly_fee ? info.monthly_fee : info.cycle_fee;
 }
 std::optional<BillingDate> estimate_next_charge(const PackageInfo& info, std::chrono::year_month_day today) {
-    if (!today.ok() || info.monthly_fee || !info.service_normal || !info.balance || !info.cycle_fee || !info.cycle_days ||
-        !info.cycle_start || !info.cycle_end || *info.cycle_fee < 0 || *info.balance < *info.cycle_fee) return {};
-    const auto& from = *info.cycle_start; const auto& to = *info.cycle_end;
-    const std::chrono::year_month_day start{std::chrono::year(from.year), std::chrono::month(unsigned(from.month)),
-                                           std::chrono::day(unsigned(from.day))};
-    const std::chrono::year_month_day end{std::chrono::year(to.year), std::chrono::month(unsigned(to.month)),
-                                         std::chrono::day(unsigned(to.day))};
-    if (!start.ok() || !end.ok() || from.seconds || to.seconds || *info.cycle_days < 1 || *info.cycle_days > 366 ||
-        (std::chrono::sys_days(end) - std::chrono::sys_days(start)).count() + 1 != std::int64_t(*info.cycle_days) ||
-        std::chrono::sys_days(today) < std::chrono::sys_days(start) || std::chrono::sys_days(today) > std::chrono::sys_days(end)) return {};
-    const std::chrono::year_month_day next{std::chrono::sys_days(end) + std::chrono::days(1)};
-    if (!next.ok() || int(next.year()) > 2199) return {};
-    return BillingDate{int(next.year()), int(unsigned(next.month())), int(unsigned(next.day())), {}};
+    const auto cycle = current_cycle(info, today);
+    if (!today.ok() || info.monthly_fee || info.service_normal != true || !info.balance || !info.cycle_fee || !info.cycle_days ||
+        !cycle || *info.cycle_fee < 0 || *info.balance < *info.cycle_fee || *info.cycle_days < 1 || *info.cycle_days > 366 ||
+        (cycle->second - cycle->first).count() + 1 != std::int64_t(*info.cycle_days)) return {};
+    return forecast_date(cycle->second + std::chrono::days(1));
+}
+std::optional<BillingDate> estimate_package_expiry(const PackageInfo& info, std::chrono::year_month_day today) {
+    if (!today.ok() || int(today.year()) < 1970 || int(today.year()) > 2199 || info.expires ||
+        !info.balance || *info.balance < 0 || info.service_normal == false) return {};
+    const auto fee = package_fee(info);
+    if (!fee || *fee <= 0) return {}; // A free plan has no finite balance-based expiry.
+    const auto periods = *info.balance / *fee; // Unspent change cannot buy a fraction of a billing period.
+    const auto cycle = current_cycle(info, today);
+    if (info.monthly_fee) {
+        auto anchor = std::chrono::sys_days(today);
+        bool paid_period = false;
+        if (info.next_charge) {
+            const auto next = billing_day(info.next_charge);
+            if (!next || *next < anchor) return {};
+            anchor = *next;
+            paid_period = true;
+        } else if (cycle) {
+            anchor = cycle->second + std::chrono::days(1);
+            paid_period = true;
+        } else if (info.cycle_start || info.cycle_end) return {};
+        if (!periods && paid_period) return forecast_date(anchor - std::chrono::days(1));
+        const auto next_unfunded = add_months(anchor, periods);
+        if (!next_unfunded) return {};
+        return forecast_date(*next_unfunded - std::chrono::days(paid_period ? 1 : 0));
+    }
+    if (info.service_normal != true || !cycle || !info.cycle_days || *info.cycle_days < 1 || *info.cycle_days > 366 ||
+        (cycle->second - cycle->first).count() + 1 != std::int64_t(*info.cycle_days)) return {};
+    const auto last = std::chrono::sys_days(std::chrono::year{2199} / 12 / 31);
+    if (periods > (last - cycle->second).count() / *info.cycle_days) return {};
+    return forecast_date(cycle->second + std::chrono::days(periods * *info.cycle_days));
 }
 } // namespace scau::desktop

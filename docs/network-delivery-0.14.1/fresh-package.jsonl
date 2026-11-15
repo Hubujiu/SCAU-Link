@@ -1,0 +1,10 @@
+{"event":"probe_elevated","value":0}
+{"event":"probe_fresh_account_saved","value":1}
+{"event":"probe_no_imported_configuration","value":1}
+{"event":"probe_package_state","value":2}
+{"event":"probe_package_http","value":200}
+{"event":"probe_package_transport","value":0}
+{"event":"probe_package_balance","value":1}
+{"event":"probe_package_fee","value":1}
+{"event":"probe_package_next_charge","value":1}
+{"event":"probe_success","value":1}

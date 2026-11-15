@@ -39,7 +39,13 @@ std::vector<std::string> resolve_interface_ipv4(std::string_view host,unsigned i
     for(auto a=adapters;a;a=a->Next)if(a->IfIndex==index && a->OperStatus==IfOperStatusUp){adapter=a;break;}
     if(!adapter)return {};
     sockaddr_in local{};bool has_source=false;
-    for(auto a=adapter->FirstUnicastAddress;a;a=a->Next)if(a->Address.lpSockaddr && a->Address.lpSockaddr->sa_family==AF_INET){local=*reinterpret_cast<sockaddr_in*>(a->Address.lpSockaddr);local.sin_port=0;has_source=true;break;}
+    for(auto a=adapter->FirstUnicastAddress;a;a=a->Next)
+        if(a->Address.lpSockaddr && a->Address.lpSockaddr->sa_family==AF_INET && a->DadState==IpDadStatePreferred) {
+            const auto candidate=*reinterpret_cast<sockaddr_in*>(a->Address.lpSockaddr);
+            const auto address=ntohl(candidate.sin_addr.s_addr);
+            if(!address || (address>>24)==127 || (address>>24)>=224 || (address>>16)==0xa9fe)continue;
+            local=candidate;local.sin_port=0;has_source=true;break;
+        }
     if(!has_source)return {};
     std::array<unsigned char,512> query{};unsigned short nonce{};
     if(BCryptGenRandom(nullptr,reinterpret_cast<PUCHAR>(&nonce),sizeof(nonce),BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0)return {};

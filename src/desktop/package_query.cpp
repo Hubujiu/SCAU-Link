@@ -12,6 +12,7 @@
 #include <limits>
 #include <map>
 #include <stdexcept>
+#include <tuple>
 
 namespace scau::desktop {
 namespace {
@@ -215,6 +216,10 @@ std::wstring expiry_text(const std::optional<BillingDate>& date, std::chrono::ye
     return days < 0 ? L"已到期" : days == 0 ? L"今日到期" : std::to_wstring(days) + L" 天后到期";
 }
 std::wstring package_expiry_text(const PackageInfo& info, std::chrono::year_month_day today) {
+    if (!info.expires) {
+        if (const auto estimated = estimate_package_expiry(info, today))
+            return L"预计到期 " + billing_date_text(estimated);
+    }
     if (info.expires || !info.cycle_end || !today.ok()) return expiry_text(info.expires, today);
     const auto& date = *info.cycle_end;
     const std::chrono::year_month_day target{std::chrono::year{date.year}, std::chrono::month(unsigned(date.month)),
@@ -255,7 +260,7 @@ PackageInfo parse_package_response(std::wstring_view text) {
         if (!login.HasKey(L"ballInfo")) return info;
         read_items(info, login.GetNamedValue(L"ballInfo"), 0);
         if (info.balance || info.monthly_fee || info.expires || info.next_charge || info.online_devices || !info.name.empty())
-            info.state = info.balance && info.monthly_fee && info.expires && info.next_charge
+            info.state = info.balance && package_fee(info)
                              ? PackageState::Ready : PackageState::Partial;
     } catch (const winrt::hresult_error&) { return failed(PackageState::Unsupported); }
     return info;
@@ -298,12 +303,30 @@ std::string package_detail_login_path(std::wstring_view text) {
     } catch (const winrt::hresult_error&) {}
     return {};
 }
-std::string account_query_path(const Credential& credential, const std::array<unsigned char, 6>& mac) {
+std::optional<std::size_t> choose_package_adapter(std::span<const ConnectionAdapter> adapters,
+    const std::array<unsigned char, 6>& mac, unsigned interface_index) {
+    std::optional<std::size_t> chosen;
+    const bool pinned = mac != std::array<unsigned char, 6>{};
+    for (std::size_t i = 0; i < adapters.size(); ++i) {
+        const auto& adapter = adapters[i]; const auto& ip = adapter.address;
+        if (!adapter.physical || !adapter.link_up || !adapter.ipv4 || !ip[0] || ip[0] == 127 || ip[0] >= 224 ||
+            (ip[0] == 169 && ip[1] == 254) || (interface_index && adapter.index != interface_index) ||
+            (pinned && adapter.mac != mac)) continue;
+        if (!chosen || std::tuple{!adapter.gateway, adapter.metric, adapter.index, adapter.id} <
+            std::tuple{!adapters[*chosen].gateway, adapters[*chosen].metric, adapters[*chosen].index, adapters[*chosen].id}) chosen = i;
+    }
+    return chosen;
+}
+std::string account_query_path(const Credential& credential, const std::array<unsigned char, 6>& mac,
+    std::wstring_view source_ipv4) {
     if (credential.username.empty() || credential.password.empty() ||
         credential.username.find_first_of(L"&=\r\n") != std::wstring::npos ||
         credential.password.find_first_of(L"&=\r\n") != std::wstring::npos) throw std::invalid_argument("Unsupported account query");
+    const auto ip = source_ipv4.empty() ? adapter_ip(mac) : std::wstring(source_ipv4);
+    IN_ADDR address{};
+    if (InetPtonW(AF_INET, ip.c_str(), &address) != 1) throw std::invalid_argument("Invalid account query source");
     std::wstring plain = L"userid=" + credential.username + L"&password=" + credential.password +
-                         L"&userip=" + adapter_ip(mac) + L"&callBack=ballInfo&channel=su";
+                         L"&userip=" + ip + L"&callBack=ballInfo&channel=su";
     Wipe wipe{plain};
     auto encoded = scau::selfservice_encode_query(plain);
     WipeBytes encoded_wipe{encoded};
@@ -312,28 +335,29 @@ std::string account_query_path(const Credential& credential, const std::array<un
 PackageInfo query_package(const Credential& credential, const std::array<unsigned char, 6>& mac,
                           PackageDiagnostics* diagnostics, std::string* private_response, const std::atomic_bool* cancel,
                           PackageSender sender, unsigned interface_index) {
+    if (diagnostics) *diagnostics = {};
+    if (private_response) private_response->clear();
     auto effective_mac=mac;
+    std::wstring source_ipv4;
     if (!sender) {
-        const auto adapters=connection_adapters();const ConnectionAdapter* chosen=nullptr;
-        for(const auto& adapter:adapters) {
-            const auto& ip=adapter.address;
-            if(!adapter.physical || !adapter.link_up || !adapter.ipv4 || !ip[0] || ip[0]==127 || ip[0]>=224 ||
-                (ip[0]==169 && ip[1]==254) || (interface_index && adapter.index!=interface_index))continue;
-            if(!chosen || (adapter.mac==mac && chosen->mac!=mac) ||
-                ((adapter.mac==mac)==(chosen->mac==mac) && adapter.metric<chosen->metric))chosen=&adapter;
-        }
+        const auto adapters=connection_adapters();
+        const auto chosen=choose_package_adapter(adapters,mac,interface_index);
         if(!chosen)return failed(PackageState::NetworkError);
-        effective_mac=chosen->mac;interface_index=chosen->index;
+        const auto& adapter=adapters[*chosen];
+        effective_mac=adapter.mac;interface_index=adapter.index;
+        wchar_t address[INET_ADDRSTRLEN]{};
+        if (!InetNtopW(AF_INET, adapter.address.data(), address, std::size(address))) return failed(PackageState::NetworkError);
+        source_ipv4=address;
         sender=[interface_index](auto method,auto path,auto body,auto diagnostics,auto cancel,auto cookie){
             return detail::school_https_request_on_interface(interface_index,method,path,body,diagnostics,cancel,cookie);
         };
     }
-    if (diagnostics) *diagnostics = {};
-    if (private_response) private_response->clear();
+    if (diagnostics) {diagnostics->interface_index=interface_index;diagnostics->stage=PackageStage::Encoding;}
     std::string path; WipeBytes path_wipe{path};
-    try { path = account_query_path(credential, effective_mac); }
+    try { path = account_query_path(credential, effective_mac, source_ipv4); }
     catch (const std::exception&) { return failed(PackageState::Unsupported); }
     detail::TlsDiagnostics tls;
+    if (diagnostics) diagnostics->stage=PackageStage::Summary;
     auto reply = sender("GET", path, {}, &tls, cancel, {});
     WipeBytes response_wipe{reply.response.body};
     WipeBytes response_cookie_wipe{reply.response.session_cookie};
@@ -363,11 +387,13 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
     // Returned JavaScript is never executed or followed.
     // Only the two observed read-only package overview pages are requested.
     try {
+        if (diagnostics) diagnostics->stage=PackageStage::DetailRoute;
         auto login_path = package_detail_login_path(*decoded);
         WipeBytes login_path_wipe{login_path};
         if (login_path.empty()) return info;
         SecureZeroMemory(path.data(), path.size());
         path = std::move(login_path);
+        if (diagnostics) diagnostics->stage=PackageStage::DetailLogin;
         auto login = sender("GET", path, {}, nullptr, cancel, {});
         WipeBytes login_body_wipe{login.response.body}, login_cookie_wipe{login.response.session_cookie};
         if (diagnostics) {
@@ -380,6 +406,7 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
             !detail::valid_school_session(login.response.session_cookie)) return info;
         if (cancel && cancel->load()) return info;
         if (diagnostics) diagnostics->detail_requested = true;
+        if (diagnostics) diagnostics->stage=PackageStage::Overview;
         auto page = sender("GET", "/selfservice/module/userself/web/portal_packagemoney.jsf", {},
                            nullptr, cancel, login.response.session_cookie);
         WipeBytes page_body_wipe{page.response.body}, page_cookie_wipe{page.response.session_cookie};
@@ -400,6 +427,7 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
         if (info.name.empty()) info.name = more.name;
         if ((!info.monthly_fee || !info.next_charge) && !(cancel && cancel->load())) {
             if (diagnostics) diagnostics->billing_requested = true;
+            if (diagnostics) diagnostics->stage=PackageStage::Billing;
             const auto cookie = detail::valid_school_session(page.response.session_cookie)
                 ? std::string_view(page.response.session_cookie) : std::string_view(login.response.session_cookie);
             auto billing_page = sender("GET", "/selfservice/module/userself/web/consume.jsf", {}, nullptr, cancel, cookie);
@@ -428,8 +456,9 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
                 }
             }
         }
-        info.state = info.balance && info.monthly_fee && info.expires && info.next_charge
+        info.state = info.balance && package_fee(info)
                          ? PackageState::Ready : PackageState::Partial;
+        if (diagnostics && info.state==PackageState::Ready) diagnostics->stage=PackageStage::Complete;
     } catch (const std::exception&) { /* Keep the already verified summary. */ }
     return info;
 }

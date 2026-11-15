@@ -1,0 +1,12 @@
+[
+  {
+    "name": "network-only home queries the retained saved account and shows its balance",
+    "passed": true,
+    "method": "native application synthetic controls"
+  },
+  {
+    "name": "wireless 1x home shows the queried balance",
+    "passed": true,
+    "method": "native application synthetic controls"
+  }
+]

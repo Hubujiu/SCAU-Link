@@ -183,7 +183,7 @@ class App {
     std::wstring username, active_username, adapter = L"以太网", message;
     AccountCatalog account_catalog;
     std::map<std::string, std::pair<std::string, PackageInfo>> packages;
-    std::string form_account_id, active_account_id;
+    std::string form_account_id, active_account_id, package_account_id;
     bool account_editor = false, login_after_save = false;
     bool account_service = false, campus_busy = false, campus_confirming = false;
     bool password_view = false, password_busy = false, password_confirming = false,
@@ -312,14 +312,20 @@ class App {
         return account && found != packages.end() && found->second.first == account->secret_id
                    ? found->second.second : missing;
     }
+    std::string home_package_account() const {
+        if (account_catalog.find(active_account_id)) return active_account_id;
+        return account_catalog.find(package_account_id) ? package_account_id : std::string{};
+    }
     ConnectionMode display_mode() const {
         return connected_or_busy(status) ? active_mode : settings.mode;
     }
     void request_visible_packages() {
         if (!backend || !initialized || settings.mini || !IsWindowVisible(window) || IsIconic(window)) return;
         if (current == Account && !account_editor && !account_service) backend->request_packages();
-        else if (current == Home && status == Status::Online && !active_account_id.empty())
-            backend->request_packages(active_account_id);
+        else if (current == Home && status == Status::Online) {
+            const auto id = home_package_account();
+            if (!id.empty()) backend->request_packages(id);
+        }
     }
     Box page_box(int width, int height) const {
         const int content = settings.mini ? width - 48 : std::min(width - 248, 920);
@@ -1017,13 +1023,18 @@ class App {
             text(Home, AccountValue,
                  status == Status::Online ? active_username :
                  masked(status == Status::Error && !active_username.empty() ? active_username : username));
-            const auto& billing = package_for(active_account_id);
+            if (status == Status::Online && active_account_id.empty()) {
+                if (const auto* account = account_catalog.find(home_package_account()))
+                    text(Home, AccountValue, L"账号未确认 · 套餐账号 " + account->username);
+            }
+            const auto& billing = package_for(home_package_account());
             SYSTEMTIME local{}; GetLocalTime(&local);
             const std::chrono::year_month_day today{std::chrono::year{int(local.wYear)},
                                                      std::chrono::month{local.wMonth}, std::chrono::day{local.wDay}};
             text(Home, HomeBalance, L"余额 " + (billing.state == PackageState::Loading && !billing.balance
                                                    ? std::wstring(L"加载中") : money_text(billing.balance)));
-            text(Home, HomeExpiry, package_expiry_text(billing, today));
+            const auto query_status = package_status_text(billing.state);
+            text(Home, HomeExpiry, !billing.balance && !query_status.empty() ? query_status : package_expiry_text(billing, today));
             text(Home, PackageStatus, package_status_text(billing.state));
             text(Home, HomeDevices, device_count_text(billing.online_devices));
             text(Home, Action, settings.mini && !portal_ticket.empty() ? L"登录" : connected_or_busy(status) ? L"断开连接" : credentials ? L"连接" : L"登录");
@@ -1153,7 +1164,7 @@ class App {
                 put(HomeBalance, {width - 184, 254, 156, 26}, status == Status::Online);
                 put(HomeExpiry, {width - 184, 282, 156, 24}, status == Status::Online);
                 put(PackageStatus, {28, 508, width - 56, 24}, show_details && status == Status::Online &&
-                    !package_status_text(package_for(active_account_id).state).empty());
+                    !package_status_text(package_for(home_package_account()).state).empty());
                 put(Progress, {28, 321, width - 56, 3},
                     status == Status::Connecting || status == Status::Recovering ||
                         status == Status::Loading);
@@ -1679,6 +1690,8 @@ class App {
             account_catalog = e->accounts;
             form_account_id = first_account_id();
             active_account_id = e->account_id;
+            package_account_id = e->account_id;
+            if (e->network_only) {active_account_id.clear();active_username=L"账号未确认";}
             adapter = e->adapter.empty() ? L"以太网" : e->adapter;
             status = e->status;
             message = e->message;
@@ -1691,7 +1704,7 @@ class App {
             if (status == Status::Online)
                 online_since = GetTickCount64();
             if ((!options.demo && startup_policy(silent, credentials).auto_login) || options.demo_failure ||
-                options.demo_failover)
+                options.demo_failover || options.demo_network_only)
                 backend->connect(options.startup);
         } else if (e->kind == EventKind::State) {
             portal_ticket.clear(); portal_approving = false;
@@ -1702,8 +1715,10 @@ class App {
                 active_username = e->username;
             else if (status == Status::Error)
                 active_username.clear();
-            if (!e->account_id.empty())
+            if (!e->account_id.empty()) {
                 active_account_id = e->account_id;
+                package_account_id = e->account_id;
+            }
             if(e->network_only) {active_account_id.clear();active_username=L"账号未确认";}
             if (status == Status::Online) {
                 if (before != Status::Online) {
@@ -2612,7 +2627,7 @@ void App::paint_page(Page &p) {
                     renderer.icon(Icon::User, {28, 184, 14, 14}, RGB(139, 155, 132));
                 if (show_details) {
                     const float detail_height = status == Status::Online &&
-                        !package_status_text(package_for(active_account_id).state).empty() ? 128.f : 98.f;
+                        !package_status_text(package_for(home_package_account()).state).empty() ? 128.f : 98.f;
                     renderer.fill({0, 416, w, detail_height}, White, 8);
                     renderer.outline({.5f, 416.5f, w - 1, detail_height - 1}, Line, 7.5f);
                     renderer.line(w / 3, 434, w / 3, 496, Line);
@@ -3141,6 +3156,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         else if (argument == L"--demo-web") {
             app.options.demo = true;
             app.options.demo_wireless = true;
+        }
+        else if (argument == L"--demo-network-only") {
+            app.options.demo = app.options.demo_network_only = app.options.demo_wireless = true;
+            app.options.demo_online = false;
         }
         else if (argument == L"--demo-web-portal") {
             app.options.demo = app.options.demo_wireless = app.options.demo_portal = true;

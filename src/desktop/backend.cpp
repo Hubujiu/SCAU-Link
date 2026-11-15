@@ -1,4 +1,5 @@
 #include "backend.hpp"
+#include "package_retry.hpp"
 #include "connection_setup.hpp"
 #include "portal_auth.hpp"
 #include "wireless_session.hpp"
@@ -55,12 +56,13 @@ void Backend::request_packages(std::string id) {
     queue([this, id = std::move(id)] {
         if (package_quit_) return;
         std::array<unsigned char, 6> mac{};
+        unsigned interface_index = 0;
         if (!options_.demo && !profile_.empty()) {
             try { mac = load_profile(profile_).local; } catch (const std::exception&) {}
         }
         if (!options_.demo && (running_ ? session_mode_.load() : mode_) != ConnectionMode::Wired) {
             const auto network = current_wireless_network();
-            if (network.ready) mac = network.mac;
+            if (network.found) {mac = network.mac; interface_index = network.index;}
         }
         for (const auto& entry : catalog_.entries) {
             if (!id.empty() && entry.id != id) continue;
@@ -76,6 +78,7 @@ void Backend::request_packages(std::string id) {
                 e.package.state = PackageState::Loading;
                 post(std::move(e));
                 PackageTask task;task.account=entry;task.mac=mac;task.connection_epoch=package_connection_epoch_.load();
+                task.interface_index=interface_index;
                 package_queue_.push_back(std::move(task));
             }
             package_cv_.notify_one();
@@ -165,9 +168,9 @@ void Backend::campus_work(const PackageTask& task) {
 }
 void Backend::package_work() {
     const auto apartment = RoInitialize(RO_INIT_MULTITHREADED);
-    ULONGLONG certificate_retry = 0, network_retry = 0;
+    PackageCooldown cooldown;
+    unsigned cooldown_epoch = package_connection_epoch_.load();
     std::map<std::string,std::pair<unsigned,unsigned>> billing_retries;
-    auto secure_failure = PackageState::CertificateError;
     for (;;) {
         PackageTask task;
         {
@@ -182,6 +185,8 @@ void Backend::package_work() {
         }
         Event e; e.kind = EventKind::Package; e.account_id = task.account.id; e.package_secret = task.account.secret_id;
         e.package.state = PackageState::Unsupported;
+        const auto epoch = package_connection_epoch_.load();
+        if (epoch != cooldown_epoch) {cooldown.reset();cooldown_epoch=epoch;}
         try {
             if (options_.demo) {
                 const auto ready=GetTickCount64()+options_.demo_package_delay_ms;
@@ -206,20 +211,24 @@ void Backend::package_work() {
                 }
             } else if (FAILED(apartment)) {
                 e.package.state = PackageState::Unsupported;
-            } else if (GetTickCount64() < certificate_retry) {
-                e.package.state = secure_failure;
-            } else if (GetTickCount64() < network_retry) {
-                e.package.state = PackageState::NetworkError;
+            } else if (const auto cached = cooldown.failure(GetTickCount64())) {
+                e.package.state = *cached;
             } else {
                 Credential secret;
-                if (accounts_ && accounts_->read(task.account, secret)) e.package = query_package(secret, task.mac, nullptr, nullptr, &package_quit_);
+                if (accounts_ && accounts_->read(task.account, secret)) {
+                    PackageDiagnostics diagnostic;
+                    e.package = query_package(secret, task.mac, &diagnostic, nullptr, &package_quit_, {}, task.interface_index);
+                    cooldown.record(e.package.state, GetTickCount64());
+                    log("package_query_stage", int(diagnostic.stage));
+                    log("package_query_interface", diagnostic.interface_index);
+                    log("package_query_http", diagnostic.http_status);
+                    log("package_query_transport_error", diagnostic.transport_error);
+                    log("package_query_tls_error", diagnostic.tls_library_error);
+                    log("package_query_detail_http", diagnostic.detail_http_status);
+                    log("package_query_billing_http", diagnostic.billing_http_status);
+                } else log("package_query_credential_unavailable");
             }
         } catch (...) { e.package.state = PackageState::Unsupported; }
-        if (e.package.state == PackageState::CertificateError || e.package.state == PackageState::TlsError) {
-            secure_failure = e.package.state;
-            certificate_retry = GetTickCount64() + 300000;
-        }
-        if (e.package.state == PackageState::NetworkError) network_retry = GetTickCount64() + 5000;
         {
             std::lock_guard lock(package_mutex_);
             const auto state = e.package.state;
@@ -231,11 +240,11 @@ void Backend::package_work() {
                 // new connection's query for five minutes.
                 auto retry=task;retry.connection_epoch=connection_epoch;
                 if(running_ && session_mode_.load()!=ConnectionMode::Wired) {
-                    try {const auto network=current_wireless_network();if(network.ready)retry.mac=network.mac;}
+                    try {const auto network=current_wireless_network();if(network.found){retry.mac=network.mac;retry.interface_index=network.index;}}
                     catch(...) {}
                 }
                 package_queue_.push_back(std::move(retry));
-                network_retry=certificate_retry=0;
+                cooldown.reset();
                 package_due_[key]=GetTickCount64()+10000;
                 log("package_query_restarted_after_connection");
             } else {
@@ -338,6 +347,7 @@ void Backend::initialize() {
             const bool online = options_.demo_online && !catalog_.entries.empty();
             e.status = online ? Status::Online : Status::Offline;
             e.account_id = online ? catalog_.entries.front().id : std::string{};
+            e.network_only = online && options_.demo_network_only;
             account_summary(e);
             post(std::move(e));
             return;
@@ -690,6 +700,7 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                             online.status = Status::Online;
                             online.username = found->info.username;
                             online.account_id = id;
+                            if (options_.demo_network_only) {online.network_only=true;online.account_id.clear();online.username.clear();}
                             if (!cancelled())
                                 post(std::move(online));
                             while (!cancelled())

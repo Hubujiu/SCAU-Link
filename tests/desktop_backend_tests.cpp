@@ -83,6 +83,17 @@ int wmain() {
         wc.lpszClassName = L"ScauLink.BackendFixture";
         RegisterClassW(&wc);
         {
+            BackendOptions options;options.demo_packages=true;options.demo_network_only=true;
+            Fixture f(options);f.backend->connect();f.wait([&]{return f.state(Status::Online);});
+            const auto online=std::find_if(f.events.begin(),f.events.end(),[](const auto& e){return e.kind==EventKind::State && e.status==Status::Online;});
+            require(online!=f.events.end() && online->network_only && online->account_id.empty(),
+                    "Network-only connectivity does not claim an authenticated account");
+            const auto account=f.events.front().accounts.entries.front().id;
+            f.backend->request_packages(account);
+            f.wait([&]{return std::any_of(f.events.begin(),f.events.end(),[](const auto& e){return e.kind==EventKind::Package && e.package.state==PackageState::Ready;});});
+            require(f.events.back().package.balance==13650, "Saved-account billing queries work independently of the unidentified online session");
+        }
+        {
             BackendOptions options;options.demo_packages=true;options.demo_package_delay_ms=80;
             Fixture f(options);const auto id=f.events.front().accounts.entries.front().id;
             f.backend->request_packages(id);

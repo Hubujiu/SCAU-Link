@@ -1,0 +1,45 @@
+{
+  "product": "SCAU Link",
+  "version": "0.14.1",
+  "releaseChannel": "preview",
+  "previewReason": "本机只读实网及合成控件回归通过；其他电脑、真实无线新登录和完整视觉检查仍待复测",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-15T04:42:13.774122+00:00",
+  "desktopSha256": "1f7084a1cda3958a83dfc5e8cb04c9ffd940cc87feaa67a3a92b82223d434ca9",
+  "authenticationSha256": "11e19451c7c5630abf6d4e7a81b1856deef2b9f0685026e1b7b15ed697bbb856",
+  "updaterSha256": "78c080db67250a93c08bac5546b849863366d054f4f809ad1f110b822f1f4453",
+  "automatedTests": {
+    "passed": 36,
+    "total": 36,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 2,
+    "total": 2,
+    "executedOnThisBuild": 2,
+    "method": "Synthetic demo windows, native control text only; no visual inspection claimed.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "freshAccountReadOnlyProbe": {
+    "passed": true,
+    "httpStatus": 200,
+    "balanceAvailable": true,
+    "feeAvailable": true,
+    "noImportedConfiguration": true,
+    "networkAuthenticationStarted": false,
+    "evidence": "source/docs/network-delivery-0.14.1/fresh-package.jsonl"
+  },
+  "publication": {
+    "status": "release-candidate",
+    "tag": "v0.14.1-preview",
+    "note": "Generated before publication; public status is determined by the GitHub Release."
+  },
+  "notVerified": [
+    "The reporting third-party computer.",
+    "Fresh real wireless Web/1x authentication on this build.",
+    "Full visual inspection, actual reboot and long-duration stability."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}

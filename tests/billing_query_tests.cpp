@@ -1,6 +1,7 @@
 #include "desktop/package_query.hpp"
 #include <winrt/base.h>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 using namespace scau::desktop;
@@ -71,7 +72,7 @@ int main() {
         const auto today = std::chrono::year{2026}/11/14;
         const auto parsed = parse_package_detail(overview());
         require(parsed.cycle_fee == 2450 && parsed.cycle_days == 31 && !parsed.monthly_fee && !parsed.next_charge &&
-                parsed.service_normal && package_fee_label(parsed) == L"每 31 天扣费" && package_fee(parsed) == 2450,
+                parsed.service_normal == true && package_fee_label(parsed) == L"每 31 天扣费" && package_fee(parsed) == 2450,
                 "A fixed-day billing policy never becomes a calendar-month fee or an authoritative scheduled debit");
         require(billing_date_text(estimate_next_charge(parsed, today)) == L"2026-12-02" &&
                 billing_date_text(estimate_next_charge(parsed, today), true).empty(),
@@ -99,10 +100,68 @@ int main() {
         auto monthly = parsed; monthly.monthly_fee = 3000;
         require(package_fee_label(monthly) == L"每月扣费" && package_fee(monthly) == 3000, "Explicit monthly contract remains distinct");
         require(!estimate_next_charge(monthly, today), "Monthly and fixed-day contracts cannot be combined into an estimate");
+        require(billing_date_text(estimate_package_expiry(parsed, today)) == L"2027-05-05" &&
+                package_expiry_text(parsed, today) == L"预计到期 2027-05-05" && !parsed.expires && !parsed.next_charge &&
+                parsed.state == PackageState::Ready && package_status_text(parsed.state).empty(),
+                "Balance buys five complete 31-day renewals after the paid cycle, with an explicitly labelled forecast");
+        for (const auto balance : {0LL, 2449LL, 2450LL}) {
+            auto funded = parsed; funded.balance = balance;
+            require(billing_date_text(estimate_package_expiry(funded, today)) == (balance < 2450 ? L"2026-12-01" : L"2027-01-01"),
+                    "Zero or insufficient renewal funds retain the paid period; one full fee adds exactly one period");
+        }
+        for (const auto state : {L"暂停", L"未知", L""})
+            require(!estimate_package_expiry(parse_package_detail(overview(L"周期31天24.50元", L"2026-11-01 至 2026-12-01", state)), today),
+                    "Explicitly abnormal service cannot receive an expiry forecast");
+        require(!estimate_package_expiry(free, today) && !estimate_package_expiry(parsed, std::chrono::year{2026}/10/31) &&
+                !estimate_package_expiry(parsed, std::chrono::year{2026}/12/2),
+                "Free plans and stale/future cycles cannot imply a finite funded expiry");
+        {
+            auto known = parsed; known.expires = parse_billing_date(L"2026-12-10");
+            require(!estimate_package_expiry(known, today) && package_expiry_text(known, today) == L"26 天后到期",
+                    "A server expiry takes priority over a balance forecast");
+            auto invalid = parsed; invalid.balance = -1;
+            require(!estimate_package_expiry(invalid, today), "Debt cannot buy future periods");
+            invalid = parsed; invalid.cycle_days = 30;
+            require(!estimate_package_expiry(invalid, today), "Contradictory cycle lengths cannot supply a forecast");
+            invalid = parsed; invalid.service_normal.reset();
+            require(!estimate_package_expiry(invalid, today), "Fixed-day renewal requires a known normal service");
+            invalid = parsed; invalid.balance = std::numeric_limits<std::int64_t>::max(); invalid.cycle_fee = 1;
+            require(!estimate_package_expiry(invalid, today), "Extreme fixed-day horizons are rejected before date arithmetic overflows");
+        }
+        {
+            PackageInfo plan; plan.balance = 14000; plan.monthly_fee = 2000;
+            require(billing_date_text(estimate_package_expiry(plan, today)) == L"2027-06-14" &&
+                    package_expiry_text(plan, today) == L"预计到期 2027-06-14" && !plan.expires && !plan.next_charge,
+                    "Balance and monthly fee alone provide a calendar-month forecast from today, without inventing server fields");
+            plan.cycle_start = parse_billing_date(L"2026-11-01"); plan.cycle_end = parse_billing_date(L"2026-11-30");
+            require(billing_date_text(estimate_package_expiry(plan, today)) == L"2027-06-30",
+                    "An existing paid calendar-month period is retained before the seven funded renewals");
+            plan.next_charge = parse_billing_date(L"2026-12-05 06:45:00");
+            require(billing_date_text(estimate_package_expiry(plan, today)) == L"2027-07-04" &&
+                    billing_date_text(estimate_package_expiry(plan, today), true).empty(),
+                    "An explicit next debit anchors the forecast without inventing an expiry time of day");
+            plan.service_normal = false;
+            require(!estimate_package_expiry(plan, today), "A known paused monthly plan cannot receive a renewal forecast");
+            plan.service_normal.reset(); plan.cycle_start.reset(); plan.cycle_end.reset(); plan.next_charge.reset();
+            plan.balance = 2000;
+            require(billing_date_text(estimate_package_expiry(plan, std::chrono::year{2028}/1/31)) == L"2028-02-29" &&
+                    billing_date_text(estimate_package_expiry(plan, std::chrono::year{2026}/1/31)) == L"2026-02-28",
+                    "Calendar-month forecasts clamp to the last valid day, including leap February");
+            plan.balance = 4000;
+            require(billing_date_text(estimate_package_expiry(plan, std::chrono::year{2026}/1/31)) == L"2026-03-31",
+                    "Multi-month forecasts preserve the original anniversary instead of accumulating February drift");
+            plan.balance = 0;
+            require(billing_date_text(estimate_package_expiry(plan, today)) == L"2026-11-14", "Zero unanchored funds forecast no future months");
+            plan.monthly_fee = 0;
+            require(!estimate_package_expiry(plan, today), "A free monthly plan has no finite balance-based expiry");
+            plan.monthly_fee = 1; plan.balance = std::numeric_limits<std::int64_t>::max();
+            require(!estimate_package_expiry(plan, today), "Extreme monthly horizons cannot overflow calendar arithmetic");
+        }
         {
             Fixture f; f.rotate_cookie = true; PackageDiagnostics d; const auto info = f.query(&d);
             require(f.requests == 4 && d.billing_requested && d.billing_detail_matched && d.billing_http_status == 200 &&
-                info.balance == 12345 && info.cycle_fee == 2450 && info.cycle_days == 31 && !info.monthly_fee && !info.next_charge,
+                info.balance == 12345 && info.cycle_fee == 2450 && info.cycle_days == 31 && !info.monthly_fee && !info.next_charge &&
+                info.state == PackageState::Ready && package_expiry_text(info, today) == L"预计到期 2027-05-05",
                 "Only corroborated overview supplies its policy; no mutation, external URL or invented scheduled debit");
         }
         for (unsigned failure = 0; failure < 6; ++failure) {
@@ -119,7 +178,7 @@ int main() {
         }
         { Fixture f; f.cancel_after_detail = true; const auto info = f.query();
           require(f.requests == 3 && info.balance == 12345 && !info.cycle_fee, "Cancellation prevents the additional overview request"); }
-        std::cout << "PASS: fixed-day policy, exact/estimated separation, calendar/funding/state limits, isolated read-only request flow and fallback\n";
+        std::cout << "PASS: fixed-day/monthly expiry forecasts, exact/estimated separation, calendar/funding/state limits, isolated read-only request flow and fallback\n";
         winrt::uninit_apartment(); return 0;
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n'; winrt::uninit_apartment(); return 1;

@@ -151,9 +151,9 @@ void handoff(bool fail){
     const auto bin=executable().parent_path();
     std::filesystem::copy_file(executable(),installation/L"SCAU-Link.exe");
     std::filesystem::copy_file(bin/L"update-helper-fixture.exe",installation/L"scau-update.exe");
-    const auto setup=cache/L"SCAU-Link-0.14.0-Setup-x64-preview.exe";
+    const auto setup=cache/(L"SCAU-Link-"+std::wstring(current_version)+L"-Setup-x64-preview.exe");
     std::filesystem::copy_file(bin/L"update-installer-fixture.exe",setup);
-    const auto payload=manifest(read(setup));write(cache/L"SCAU-Link-update.json",payload);write(cache/L"SCAU-Link-update.sig",sign(payload));
+    const auto payload=manifest(read(setup),current_version_utf8);write(cache/L"SCAU-Link-update.json",payload);write(cache/L"SCAU-Link-update.sig",sign(payload));
     if(fail)write(installation/L"fail-install","1");
     PROCESS_INFORMATION parent{};
     require(spawn(installation/L"SCAU-Link.exe",L"--handoff-parent \""+installation.native()+L"\" \""+cache.native()+L"\"",parent),"start isolated parent");

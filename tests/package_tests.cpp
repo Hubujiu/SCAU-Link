@@ -1,4 +1,6 @@
 #include "desktop/package_query.hpp"
+#include "desktop/package_retry.hpp"
+#include "selfservice_crypto.hpp"
 #include <winrt/base.h>
 #include <iostream>
 #include <stdexcept>
@@ -8,6 +10,34 @@ void require(bool ok, const char* message) { if (!ok) throw std::runtime_error(m
 int main() {
     try {
         winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        {
+            PackageCooldown cooldown;
+            cooldown.record(PackageState::TlsError, 1000);
+            for (std::uint64_t time = 16000; time < 301000; time += 15000)
+                require(cooldown.failure(time) == PackageState::TlsError, "A cached TLS failure remains within its original cooldown");
+            require(!cooldown.failure(301000), "Repeated visible-page checks cannot postpone a real TLS retry indefinitely");
+            cooldown.record(PackageState::NetworkError, 400000);
+            require(cooldown.failure(404999) == PackageState::NetworkError && !cooldown.failure(405000), "Network cooldown lasts five seconds");
+            cooldown.record(PackageState::CertificateError, 500000); cooldown.reset();
+            require(!cooldown.failure(500001), "A new connection immediately clears the old network's site cooldown");
+        }
+        {
+            ConnectionAdapter wired, wireless, vpn;
+            wired.mac={2,0,0,0,0,1}; wired.index=21; wired.id="wired"; wired.physical=wired.ethernet=wired.link_up=wired.ipv4=true;
+            wired.address={192,0,2,1}; wired.metric=1;
+            wireless=wired; wireless.mac.back()=2; wireless.index=16; wireless.id="wireless"; wireless.metric=50;
+            wireless.ethernet=false; wireless.wireless=true; wireless.address={192,0,2,2};
+            vpn=wired; vpn.physical=false; vpn.index=42; vpn.metric=0;
+            std::vector<ConnectionAdapter> adapters{wired,wireless,vpn};
+            require(choose_package_adapter(adapters,wireless.mac,16)==1, "Wireless queries stay on the selected campus interface despite a lower-metric Ethernet/VPN");
+            adapters[1].address={169,254,1,1};
+            require(!choose_package_adapter(adapters,wireless.mac,16) && !choose_package_adapter(adapters,wireless.mac),
+                    "An unready campus interface cannot silently submit through another physical network");
+            Credential credential; credential.username=L"fixture"; credential.password=L"fixture-only";
+            const auto expected=scau::selfservice_encode_query(L"userid=fixture&password=fixture-only&userip=192.0.2.2&callBack=ballInfo&channel=su");
+            require(account_query_path(credential,wireless.mac,L"192.0.2.2").ends_with("?s="+expected),
+                    "The encoded userip is the same source address selected for the HTTPS socket");
+        }
         require(parse_device_count(L"0") == 0 && parse_device_count(L"2") == 2 &&
                     parse_device_count(L"65535") == 65535 && device_count_text(0) == L"0 台" &&
                     device_count_text({}) == L"未知", "Device count preserves zero and unknown independently");
@@ -53,11 +83,12 @@ int main() {
         ]}})");
         require(complete.state == PackageState::Ready && complete.balance == 13650 && complete.monthly_fee == 3000 &&
                 complete.expires && complete.next_charge && complete.name == L"测试套餐", "Known label-value contract");
-        const auto partial = parse_package_response(LR"({"getNewLoginInfo":{"ballInfo":[
+        const auto priced = parse_package_response(LR"({"getNewLoginInfo":{"ballInfo":[
             {"displayName":"账户余额","value":"0元"},{"displayName":"每月扣费","value":"30元"}
         ]}})");
-        require(partial.state == PackageState::Partial && partial.balance == 0 && !partial.expires && !partial.next_charge,
-                "Never manufacture expiry or charge date from balance/monthly fee");
+        require(priced.state == PackageState::Ready && priced.balance == 0 && !priced.expires && !priced.next_charge &&
+                package_status_text(priced.state).empty(),
+                "Known balance and pricing are ready without manufacturing server expiry or charge fields");
         const auto generic_fee = parse_package_response(LR"({"getNewLoginInfo":{"ballInfo":[
             {"id":"myFee","displayName":"我的费用","value":"88.00"}
         ]}})");
@@ -97,7 +128,7 @@ int main() {
         for (auto text : {L"<html>login</html>", L"{bad}", L"{\"balance\":0}", L"evil({});", L"{}"})
             require(parse_package_response(text).state == PackageState::Unsupported, "Unknown schema must fail closed");
         require(parse_package_response(std::wstring(524289, L'x')).state == PackageState::Unsupported, "Response size bound");
-        std::cout << "PASS: exact money/calendar formats, known billing envelope, missing fields, unknown schema, no inferred expiry\n";
+        std::cout << "PASS: exact money/calendar formats, known billing envelope, pricing readiness, missing fields and unchanged server dates\n";
         winrt::uninit_apartment(); return 0;
     } catch (const winrt::hresult_error& e) {
         std::cerr << "WinRT error: " << std::hex << static_cast<unsigned>(e.code()) << '\n';
