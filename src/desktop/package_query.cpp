@@ -88,6 +88,40 @@ struct WipeBytes {
     ~WipeBytes() { SecureZeroMemory(text.data(), text.size()); }
 };
 PackageInfo failed(PackageState state) { PackageInfo info; info.state = state; return info; }
+winrt::Windows::Data::Json::JsonArray summary_items(std::wstring_view text, PackageDiagnostics* diagnostics) {
+    using namespace winrt::Windows::Data::Json;
+    const auto result = [&](PackageSummaryResult value) { if (diagnostics) diagnostics->summary_result = value; };
+    if (diagnostics) diagnostics->summary_items = 0;
+    if (text.size() > 524288) { result(PackageSummaryResult::TooLarge); return nullptr; }
+    while (!text.empty() && (std::iswspace(text.front()) || text.front() == L'\ufeff')) text.remove_prefix(1);
+    while (!text.empty() && std::iswspace(text.back())) text.remove_suffix(1);
+    if (text.empty()) { result(PackageSummaryResult::Empty); return nullptr; }
+    if (text.front() == L'<') { result(PackageSummaryResult::Html); return nullptr; }
+    if (text.starts_with(L"ballInfo(") && (text.ends_with(L");") || text.ends_with(L")")))
+        text = text.substr(9, text.size() - 9 - (text.ends_with(L");") ? 2u : 1u));
+    result(PackageSummaryResult::InvalidJson);
+    try {
+        JsonObject root{nullptr};
+        // Own the string: a JSONP substring need not be NUL-terminated.
+        if (!JsonObject::TryParse(winrt::hstring{text}, root)) return nullptr;
+        result(PackageSummaryResult::MissingEnvelope);
+        if (!root.HasKey(L"getNewLoginInfo")) return nullptr;
+        const auto envelope = root.GetNamedValue(L"getNewLoginInfo");
+        result(PackageSummaryResult::InvalidEnvelope);
+        if (envelope.ValueType() != JsonValueType::Object) return nullptr;
+        const auto login = envelope.GetObject();
+        result(PackageSummaryResult::MissingItems);
+        if (!login.HasKey(L"ballInfo")) return nullptr;
+        const auto value = login.GetNamedValue(L"ballInfo");
+        result(PackageSummaryResult::InvalidItems);
+        if (value.ValueType() != JsonValueType::Array) return nullptr;
+        const auto items = value.GetArray();
+        if (diagnostics) diagnostics->summary_items = items.Size();
+        if (items.Size() > 128) { result(PackageSummaryResult::TooManyItems); return nullptr; }
+        result(items.Size() ? PackageSummaryResult::UnrecognizedItems : PackageSummaryResult::EmptyItems);
+        return items;
+    } catch (const winrt::hresult_error&) { return nullptr; }
+}
 std::wstring adapter_ip(const std::array<unsigned char, 6>& mac) {
     // A fresh wireless installation has no wired connection.scau. Prefer the
     // requested live physical interface, then another usable physical adapter.
@@ -240,42 +274,27 @@ std::wstring package_status_text(PackageState state) {
     default: return {};
     }
 }
-PackageInfo parse_package_response(std::wstring_view text) {
+PackageInfo parse_package_response(std::wstring_view text, PackageDiagnostics* diagnostics) {
     using namespace winrt::Windows::Data::Json;
     PackageInfo info;
     info.state = PackageState::Unsupported;
-    if (text.empty() || text.size() > 524288) return info;
-    const auto cleaned = trim(text);
-    text = cleaned;
-    if (text.starts_with(L"ballInfo(") && (text.ends_with(L");") || text.ends_with(L")"))) {
-        const auto suffix = text.ends_with(L");") ? 2u : 1u;
-        text = text.substr(9, text.size() - 9 - suffix);
-    }
+    const auto items = summary_items(text, diagnostics);
+    if (!items) return info;
     try {
-        JsonObject root{nullptr};
-        // JSONP leaves a non-null-terminated view. WinRT's string-reference
-        // parameter requires a terminator; use an owning HSTRING here.
-        if (!JsonObject::TryParse(winrt::hstring{text}, root) || !root.HasKey(L"getNewLoginInfo")) return info;
-        const auto login = root.GetNamedObject(L"getNewLoginInfo");
-        if (!login.HasKey(L"ballInfo")) return info;
-        read_items(info, login.GetNamedValue(L"ballInfo"), 0);
-        if (info.balance || info.monthly_fee || info.expires || info.next_charge || info.online_devices || !info.name.empty())
+        read_items(info, items, 0);
+        if (info.balance || info.monthly_fee || info.expires || info.next_charge || info.online_devices || !info.name.empty()) {
             info.state = info.balance && package_fee(info)
                              ? PackageState::Ready : PackageState::Partial;
+            if (diagnostics) diagnostics->summary_result = PackageSummaryResult::Parsed;
+        }
     } catch (const winrt::hresult_error&) { return failed(PackageState::Unsupported); }
     return info;
 }
 std::string package_detail_login_path(std::wstring_view text) {
     using namespace winrt::Windows::Data::Json;
-    if (text.empty() || text.size() > 524288) return {};
-    const auto cleaned = trim(text); text = cleaned;
-    if (text.starts_with(L"ballInfo(") && (text.ends_with(L");") || text.ends_with(L")")))
-        text = text.substr(9, text.size() - 9 - (text.ends_with(L");") ? 2u : 1u));
+    const auto items = summary_items(text, nullptr);
+    if (!items) return {};
     try {
-        JsonObject root{nullptr};
-        if (!JsonObject::TryParse(winrt::hstring{text}, root)) return {};
-        const auto items = root.GetNamedObject(L"getNewLoginInfo").GetNamedArray(L"ballInfo");
-        if (items.Size() > 128) return {};
         for (const auto& value : items) {
             if (value.ValueType() != JsonValueType::Object) continue;
             const auto item = value.GetObject();
@@ -369,28 +388,42 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
         diagnostics->certificate_checks_disabled = tls.connected;
         diagnostics->legacy_tls_used = true;
         diagnostics->content_type = reply.response.content_type;
+        diagnostics->response_bytes = static_cast<unsigned long>(reply.response.body.size());
+        diagnostics->transport_state = reply.state;
+        diagnostics->http_complete = reply.response.complete;
     }
     if (private_response) *private_response = reply.response.body;
     if (reply.state == detail::TransportState::TlsError) return failed(PackageState::TlsError);
     if (reply.state == detail::TransportState::NetworkError) return failed(PackageState::NetworkError);
-    if (reply.state != detail::TransportState::Complete) return failed(PackageState::Unsupported);
+    if (reply.state != detail::TransportState::Complete) {
+        if (diagnostics) diagnostics->summary_result = PackageSummaryResult::InvalidHttp;
+        return failed(PackageState::Unsupported);
+    }
     if (reply.response.status == 401 || reply.response.status == 403) return failed(PackageState::AuthError);
     if (reply.response.status != 200) return failed(PackageState::Unsupported);
     auto decoded = detail::decode_school_response(reply.response.body, reply.response.content_type);
-    if (!decoded) return failed(PackageState::Unsupported);
+    if (!decoded) {
+        if (diagnostics) diagnostics->summary_result = reply.response.body.empty()
+            ? PackageSummaryResult::Empty : PackageSummaryResult::DecodeError;
+        return failed(PackageState::Unsupported);
+    }
     Wipe decoded_wipe{*decoded};
-    auto info = parse_package_response(*decoded);
-    if (info.state != PackageState::Ready && info.state != PackageState::Partial) return info;
+    auto info = parse_package_response(*decoded, diagnostics);
     if (cancel && cancel->load()) return info;
 
     // The server's observed index=1 link establishes an isolated web session.
     // Returned JavaScript is never executed or followed.
     // Only the two observed read-only package overview pages are requested.
     try {
-        if (diagnostics) diagnostics->stage=PackageStage::DetailRoute;
         auto login_path = package_detail_login_path(*decoded);
         WipeBytes login_path_wipe{login_path};
-        if (login_path.empty()) return info;
+        if (diagnostics) diagnostics->detail_route_available = !login_path.empty();
+        if (login_path.empty()) {
+            if (diagnostics && info.state != PackageState::Unsupported) diagnostics->stage=PackageStage::DetailRoute;
+            return info;
+        }
+        // A validated detail route is independent of the summary's display
+        // fields. Do not discard the route just because those fields are absent.
         SecureZeroMemory(path.data(), path.size());
         path = std::move(login_path);
         if (diagnostics) diagnostics->stage=PackageStage::DetailLogin;
@@ -416,6 +449,7 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
         if (!html) return info;
         Wipe html_wipe{*html};
         const auto more = parse_package_detail(*html);
+        if (more.state != PackageState::Ready && more.state != PackageState::Partial) return info;
         if ((more.balance && info.balance && more.balance != info.balance) ||
             (!more.name.empty() && !info.name.empty() && more.name != info.name)) return info;
         if (!info.balance) info.balance = more.balance;

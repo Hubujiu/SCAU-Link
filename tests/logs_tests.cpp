@@ -1,4 +1,5 @@
 #include "desktop/platform.hpp"
+#include "desktop/package_query.hpp"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -61,6 +62,7 @@ int wmain() {
         struct Cleanup { std::filesystem::path path; ~Cleanup() {
             std::error_code error;
             for (int i = 0; i < 5; ++i) std::filesystem::remove(path / (L"session-" + std::to_wstring(i) + L".jsonl"), error);
+            std::filesystem::remove(path / L"desktop.jsonl", error);
             std::filesystem::remove(path, error);
         }} cleanup{folder};
         for (int i = 0; i < 5; ++i) {
@@ -78,6 +80,27 @@ int wmain() {
                 "Event classification cannot depend on a translated failure substring");
         require(result.entries[0].title.find(L"MUST-NOT-RENDER") == std::wstring::npos,
                 "Raw diagnostic payloads must never be displayed or searched");
+        {
+            std::ofstream file(folder / L"desktop.jsonl");
+            for (const auto [event, value] : {std::pair{"package_query_state", int(PackageState::Unsupported)},
+                    {"package_query_state", int(PackageState::Ready)},
+                    {"package_query_summary", int(PackageSummaryResult::Html)},
+                    {"package_query_summary", int(PackageSummaryResult::Parsed)},
+                    {"package_query_stage", 2}})
+                file << "{\"time\":\"2026-11-13T11:59:02Z\",\"event\":\"" << event << "\",\"value\":" << value
+                     << ",\"detail\":\"MUST-NOT-RENDER\"}\n";
+            file << "{\"time\":\"2026-11-13T11:59:02Z\",\"event\":\"package_query_state\",\"value\":\"MUST-NOT-RENDER\"}\n";
+            file << "{\"time\":\"2026-11-13T11:59:02Z\",\"event\":\"package_query_state\",\"value\":4294967295}\n";
+        }
+        query = {}; query.now_ms = now; query.search = L"套餐";
+        result = read_log_records(folder, query);
+        require(result.entries.size() == 3, "Records show package results and parse failures, without raw per-request diagnostic noise");
+        query.level = LogLevel::Error;
+        result = read_log_records(folder, query);
+        require(result.entries.size() == 1 && result.entries[0].title == L"套餐查询：数据不可用",
+                "Old numeric package failures become visible and searchable in the error filter");
+        query = {}; query.now_ms = now; query.search = L"MUST-NOT-RENDER";
+        require(read_log_records(folder, query).entries.empty(), "Private raw fields never leak through numeric package diagnostics");
         std::cout << "PASS: structured log filters, local date, ordering, bounded selection and private-payload exclusion\n";
         return 0;
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }

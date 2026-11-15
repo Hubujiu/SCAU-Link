@@ -226,6 +226,16 @@ void Backend::package_work() {
                     log("package_query_tls_error", diagnostic.tls_library_error);
                     log("package_query_detail_http", diagnostic.detail_http_status);
                     log("package_query_billing_http", diagnostic.billing_http_status);
+                    log("package_query_response_bytes", diagnostic.response_bytes);
+                    log("package_query_transport_state", int(diagnostic.transport_state));
+                    log("package_query_http_complete", diagnostic.http_complete);
+                    log("package_query_summary", int(diagnostic.summary_result));
+                    log("package_query_summary_items", diagnostic.summary_items);
+                    log("package_query_detail_route", diagnostic.detail_route_available);
+                    log("package_query_detail_login_http", diagnostic.detail_login_status);
+                    log("package_query_detail_session", diagnostic.detail_session_available);
+                    log("package_query_balance_available", e.package.balance.has_value());
+                    log("package_query_fee_available", package_fee(e.package).has_value());
                 } else log("package_query_credential_unavailable");
             }
         } catch (...) { e.package.state = PackageState::Unsupported; }

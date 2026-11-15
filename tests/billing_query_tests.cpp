@@ -18,6 +18,8 @@ std::wstring overview(std::wstring policy = L"周期31天24.50元", std::wstring
 struct Fixture {
     unsigned requests = 0;
     bool fail = false, redirect = false, rotate_cookie = false, cancel_after_detail = false;
+    std::optional<std::wstring> summary_override;
+    bool summary_protocol_error = false;
     std::wstring billing = overview();
     std::atomic_bool cancel = false;
     static HttpsResult response(std::wstring_view text, std::string cookie = {}) {
@@ -35,6 +37,11 @@ struct Fixture {
                 if (requests == 1) {
                     require(path.starts_with("/selfservice/module/scgroup/web/login_judge2.jsf?s=") && cookie.empty(),
                         "Information query has no other session cookie");
+                    if (summary_override) {
+                        auto reply = response(*summary_override);
+                        if (summary_protocol_error) { reply.state = TransportState::ProtocolError; reply.response.complete = false; }
+                        return reply;
+                    }
                     return response(LR"({"getNewLoginInfo":{"ballInfo":[
                         {"id":"packageandfee","type":"money","displayName":"套餐&余额","value":"123.45",
                          "jsonValue":"{\"packageName\":\"合成套餐\"}",
@@ -156,6 +163,33 @@ int main() {
             require(!estimate_package_expiry(plan, today), "A free monthly plan has no finite balance-based expiry");
             plan.monthly_fee = 1; plan.balance = std::numeric_limits<std::int64_t>::max();
             require(!estimate_package_expiry(plan, today), "Extreme monthly horizons cannot overflow calendar arithmetic");
+        }
+        {
+            Fixture f;
+            f.summary_override = LR"({"getNewLoginInfo":{"ballInfo":[
+                {"id":"packageandfee","url":"selfserviceurl/module/scgroup/web/login_judge2.jsf?userid=fixture&password=fixture-only&callBack=su_business_detail&channel=su&index=1&userIp=192.0.2.1"}
+            ]}})";
+            PackageDiagnostics d; const auto info = f.query(&d);
+            require(f.requests == 4 && d.summary_result == PackageSummaryResult::UnrecognizedItems && d.summary_items == 1 &&
+                    d.detail_route_available && d.stage == PackageStage::Complete && info.balance == 12345 &&
+                    info.cycle_fee == 2450 && info.state == PackageState::Ready,
+                    "A verified route still fetches balance and billing when summary display fields are absent");
+        }
+        for (auto summary : {L"<html><body>Login required</body></html>", L"{}",
+                L"{\"getNewLoginInfo\":{\"ballInfo\":[]}}",
+                LR"({"getNewLoginInfo":{"ballInfo":[{"id":"packageandfee","url":"https://untrusted.invalid/"}]}})"}) {
+            Fixture f; f.summary_override = summary; PackageDiagnostics d; const auto info = f.query(&d);
+            require(f.requests == 1 && !d.detail_route_available && info.state == PackageState::Unsupported &&
+                    !info.balance && !package_fee(info),
+                    "Unknown responses and untrusted routes never trigger a guessed detail login or invented account data");
+        }
+        {
+            Fixture f; f.summary_override = L""; f.summary_protocol_error = true;
+            PackageDiagnostics d; const auto info = f.query(&d);
+            require(f.requests == 1 && info.state == PackageState::Unsupported && d.http_status == 200 &&
+                    !d.http_complete && d.transport_state == TransportState::ProtocolError &&
+                    d.summary_result == PackageSummaryResult::InvalidHttp,
+                    "HTTP 200 headers without a complete response are distinguished from summary parsing failures");
         }
         {
             Fixture f; f.rotate_cookie = true; PackageDiagnostics d; const auto info = f.query(&d);

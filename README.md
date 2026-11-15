@@ -2,9 +2,9 @@
 
 华南农业大学校园网 Windows 原生客户端，使用 C++20、Win32、Direct2D 和 DirectWrite，无网页运行时。
 
-[下载安装包](https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.14.1-preview) · [首次使用](docs/SCAU-First-Run-0.14.1.md) · [验证报告](docs/Network-Delivery-Results-0.14.1.md)
+[下载安装包](https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.14.2-preview) · [首次使用](docs/SCAU-First-Run-0.14.2.md) · [验证报告](docs/Network-Delivery-Results-0.14.2.md)
 
-0.14.1 修复套餐查询目标丢失、TLS 冷却无法结束与无线接口选择，加入预计账户到期及原生查询回归检查，见 [查询说明](docs/Package-Query-0.14.1.md)。每次版本变更提交并推送 GitHub，通过对应 CI 后发布签名 Release，客户端才能检查到更新。
+0.14.2 修复摘要没有显示字段时提前放弃详情查询的问题，补充 HTTP 完整性与摘要解析诊断，并在“记录”页显示套餐查询结果，见 [查询说明](docs/Package-Query-0.14.2.md)。每次版本变更提交并推送 GitHub，通过对应 CI 后发布签名 Release，客户端才能检查到更新。
 
 ## 使用
 
@@ -26,9 +26,9 @@
 
 账号和密码保存在当前 Windows 用户的凭据管理器；`%LOCALAPPDATA%\ScauLink` 保存设置、账号随机标识及脱敏记录。密码不进入命令行、普通配置或日志。学校旧证书兼容限定于学校端点，GitHub 更新使用正常证书验证。仓库、安装包和源码包均不包含私人抓包、配置、Cookie 或发布私钥。
 
-本版 Release CTest **36/36** 通过，其中更新模块 **267 项检查**。新增原生应用测试使用合成账号，覆盖 Web 网络身份未确认与 1x 场景的主页余额展示；本机普通用户的空配置目录只读查询取得真实余额与周期费用。完整视觉检查和对方电脑复测仍待完成，见 [验证报告](docs/Network-Delivery-Results-0.14.1.md)。
+本版 Release CTest **36/36** 通过，新增离线回归覆盖摘要无显示字段仍读取详情、HTTP 200 但响应不完整，以及“记录”页套餐状态与脱敏解析。原有合成主页场景检查 2/2 通过，详见 [验证报告](docs/Network-Delivery-Results-0.14.2.md)。0.14.1 的本机空配置目录只读实网查询属于历史验证；本版报告故障的电脑仍待复测。
 
-0.14.1 调整了共享网卡与 DNS 地址筛选，核心摘要与 0.14.0 不同，升级时会按完整安装流程提示“更新时可能断网”；自动安装等待连接已断开。此前本机普通权限下完成的 Web 新登录、SCAUNET_1x 登录及核心崩溃后重登属于 [0.12.0 历史证据](docs/Network-Delivery-Results-0.12.0.md)。本版未重新实测无线新登录、其他电脑、Windows 实际重启、漫游、休眠或长时在线，也未提交真实改密及校园网暂停／恢复。
+客户端按认证核心与运行库的实际摘要决定更新方式。此前本机普通权限下完成的 Web 新登录、SCAUNET_1x 登录及核心崩溃后重登属于 [0.12.0 历史证据](docs/Network-Delivery-Results-0.12.0.md)。本版未重新实测无线新登录、其他电脑、Windows 实际重启、漫游、休眠或长时在线，也未提交真实改密及校园网暂停／恢复。
 
 ## 构建
 

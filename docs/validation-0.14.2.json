@@ -1,0 +1,43 @@
+{
+  "product": "SCAU Link",
+  "version": "0.14.2",
+  "releaseChannel": "preview",
+  "previewReason": "套餐详情恢复及脱敏日志离线回归通过；报告故障的测试电脑仍待复测",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-15T07:25:12.006506+00:00",
+  "desktopSha256": "f5fd82216a263fb98f8e6c426e3852486743bbd5a3ef345514cb4c05a422f94d",
+  "authenticationSha256": "3e7c3b0e7dcd64105642ad7984fc9651b672b26ab73bec66f14e7d6564e5970d",
+  "updaterSha256": "11999e949ce60387372a0d1686f71acbf0cade688921b20dbe836ab6d695e2ee",
+  "automatedTests": {
+    "passed": 36,
+    "total": 36,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 2,
+    "total": 2,
+    "executedOnThisBuild": 2,
+    "method": "Synthetic native control text; full visual inspection not claimed.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "packageQueryRegressions": {
+    "routeWithoutSummaryFields": true,
+    "incompleteHttp200": true,
+    "privateSummaryClassification": true,
+    "recordsPagePackageEvents": true,
+    "evidence": "source/docs/network-delivery-0.14.2/ctest.txt"
+  },
+  "publication": {
+    "status": "release-candidate",
+    "tag": "v0.14.2-preview",
+    "note": "Generated before publication; public status is determined by the GitHub Release."
+  },
+  "notVerified": [
+    "The reporting third-party computer and its exact server response.",
+    "Real new wired or wireless authentication, actual reboot, roaming and long-duration stability.",
+    "Full visual inspection and a fresh live school query on this build."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}

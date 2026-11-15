@@ -128,6 +128,26 @@ int main() {
         for (auto text : {L"<html>login</html>", L"{bad}", L"{\"balance\":0}", L"evil({});", L"{}"})
             require(parse_package_response(text).state == PackageState::Unsupported, "Unknown schema must fail closed");
         require(parse_package_response(std::wstring(524289, L'x')).state == PackageState::Unsupported, "Response size bound");
+        for (const auto& [text, expected] : {
+                std::pair{L"", PackageSummaryResult::Empty},
+                {L"<html><body>Login required</body></html>", PackageSummaryResult::Html},
+                {L"{bad}", PackageSummaryResult::InvalidJson},
+                {L"{}", PackageSummaryResult::MissingEnvelope},
+                {L"{\"getNewLoginInfo\":null}", PackageSummaryResult::InvalidEnvelope},
+                {L"{\"getNewLoginInfo\":{}}", PackageSummaryResult::MissingItems},
+                {L"{\"getNewLoginInfo\":{\"ballInfo\":{}}}", PackageSummaryResult::InvalidItems},
+                {L"ballInfo({\"getNewLoginInfo\":{\"ballInfo\":[]}});", PackageSummaryResult::EmptyItems},
+                {L"{\"getNewLoginInfo\":{\"ballInfo\":[{\"unknown\":\"private-value\"}]}}", PackageSummaryResult::UnrecognizedItems}}) {
+            PackageDiagnostics d;
+            require(parse_package_response(text, &d).state == PackageState::Unsupported && d.summary_result == expected,
+                    "An HTTP 200 body is classified by its structure without treating an error or empty payload as successful login");
+        }
+        {
+            PackageDiagnostics d;
+            const auto info = parse_package_response(L"\ufeff ballInfo({\"getNewLoginInfo\":{\"ballInfo\":[{\"displayName\":\"账户余额\",\"value\":\"0元\"}]}});", &d);
+            require(info.balance == 0 && d.summary_result == PackageSummaryResult::Parsed && d.summary_items == 1,
+                    "A BOM and surrounding whitespace do not hide a known summary; a real zero remains known");
+        }
         std::cout << "PASS: exact money/calendar formats, known billing envelope, pricing readiness, missing fields and unchanged server dates\n";
         winrt::uninit_apartment(); return 0;
     } catch (const winrt::hresult_error& e) {

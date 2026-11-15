@@ -98,7 +98,7 @@ def source_archive(target):
                      and p.suffix.lower() not in {'.pyc','.pdb','.obj','.exe','.dll','.lib','.cur','.ani'})
     files.extend(ROOT/'ui/prototype/assets'/p for p in ['icons.js','LUCIDE-LICENSE'])
     files.extend(ROOT/'docs'/p for p in ['desktop-package-README.txt','installer-README.txt',
-                 'SCAU-Campus-Service-20261113.md','SCAU-Billing-Query-20261114.md','Package-Query-0.14.1.md',
+                 'SCAU-Campus-Service-20261113.md','SCAU-Billing-Query-20261114.md','Package-Query-0.14.1.md',f'Package-Query-{version}.md',
                  'SCAU-Automatic-Setup-20261114.md','SCAU-Wireless-Web-20261114.md',
                  'SCAU-Password-Change-20261114.md','SCAU-Connection-Modes-20261114.md',
                  'SCAU-Wireless-8021X-20261114.md','Network-Delivery-Lab.md',

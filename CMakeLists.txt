@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(ScauNativeAuth VERSION 0.14.1 LANGUAGES C CXX RC)
+project(ScauNativeAuth VERSION 0.14.2 LANGUAGES C CXX RC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)

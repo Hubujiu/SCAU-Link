@@ -59,3 +59,13 @@ settings.ini
 /docs/network-delivery-0.14.1/*
 !/docs/network-delivery-0.14.1/ctest.txt
 !/docs/network-delivery-0.14.1/fresh-package.jsonl
+!/docs/Package-Query-0.14.2.md
+!/docs/SCAU-First-Run-0.14.2.md
+!/docs/Network-Delivery-Results-0.14.2.md
+!/docs/validation-0.14.2.json
+!/docs/ui-native-0.14.2-preview/
+/docs/ui-native-0.14.2-preview/*
+!/docs/ui-native-0.14.2-preview/interaction-checks.json
+!/docs/network-delivery-0.14.2/
+/docs/network-delivery-0.14.2/*
+!/docs/network-delivery-0.14.2/ctest.txt

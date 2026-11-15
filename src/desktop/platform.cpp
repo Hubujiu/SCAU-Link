@@ -2,8 +2,10 @@
 #include "profile_store.hpp"
 #include "protocol.hpp"
 #include "connection_setup.hpp"
+#include "package_query.hpp"
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <fstream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -297,7 +299,49 @@ std::string json_field(std::string_view line, std::string_view key) {
         return {};
     return std::string(line.substr(offset, end - offset));
 }
-std::wstring event_title(std::string_view event, std::string_view detail) {
+std::optional<unsigned> json_number(std::string_view line, std::string_view key) {
+    const auto marker = std::string("\"") + std::string(key) + "\":";
+    const auto offset = line.find(marker);
+    if (offset == line.npos) return {};
+    const auto begin = line.data() + offset + marker.size();
+    unsigned value{};
+    const auto parsed = std::from_chars(begin, line.data() + line.size(), value);
+    if (parsed.ec != std::errc{} || parsed.ptr == line.data() + line.size() ||
+        (*parsed.ptr != ',' && *parsed.ptr != '}')) return {};
+    return value;
+}
+std::wstring event_title(std::string_view event, std::string_view detail, std::optional<unsigned> value) {
+    if (event == "package_query_state" && value) {
+        switch (PackageState(*value)) {
+        case PackageState::Ready: return L"套餐查询完成";
+        case PackageState::Partial: return L"套餐查询：部分信息未提供";
+        case PackageState::Loading: return L"套餐查询中";
+        case PackageState::CertificateError: return L"套餐查询：证书校验失败";
+        case PackageState::NetworkError: return L"套餐查询：网络异常";
+        case PackageState::AuthError: return L"套餐查询：登录未通过";
+        case PackageState::Unsupported: return L"套餐查询：数据不可用";
+        case PackageState::TlsError: return L"套餐查询：TLS 连接失败";
+        default: return {};
+        }
+    }
+    if (event == "package_query_summary" && value) {
+        switch (PackageSummaryResult(*value)) {
+        case PackageSummaryResult::Empty: return L"套餐摘要：学校返回空内容";
+        case PackageSummaryResult::DecodeError: return L"套餐摘要：内容编码无法解码";
+        case PackageSummaryResult::Html: return L"套餐摘要：学校返回网页，未取得账号数据";
+        case PackageSummaryResult::InvalidJson: return L"套餐摘要：返回格式无法解析";
+        case PackageSummaryResult::MissingEnvelope: return L"套餐摘要：缺少账号摘要";
+        case PackageSummaryResult::InvalidEnvelope: return L"套餐摘要：账号摘要格式不兼容";
+        case PackageSummaryResult::MissingItems: return L"套餐摘要：缺少信息列表";
+        case PackageSummaryResult::InvalidItems: return L"套餐摘要：信息列表格式不兼容";
+        case PackageSummaryResult::EmptyItems: return L"套餐摘要：信息列表为空";
+        case PackageSummaryResult::TooManyItems: return L"套餐摘要：信息列表超出限制";
+        case PackageSummaryResult::UnrecognizedItems: return L"套餐摘要：未识别到余额等字段";
+        case PackageSummaryResult::TooLarge: return L"套餐摘要：返回内容超出限制";
+        case PackageSummaryResult::InvalidHttp: return L"套餐摘要：HTTP 响应不完整或格式异常";
+        default: return {};
+        }
+    }
     static constexpr std::pair<std::string_view, const wchar_t *> names[]{
         {"worker_authenticated", L"连接成功"},
         {"worker_network_available", L"网络已连通，账号未确认"},
@@ -340,6 +384,8 @@ std::wstring event_title(std::string_view event, std::string_view detail) {
         {"server_failure_empty_reason", L"正在重试认证"},
         {"sam_server_terminated", L"校园网已下线"},
         {"transport_lost", L"网卡连接中断"},
+        {"package_query_credential_unavailable", L"套餐查询：无法读取本机保存的凭据"},
+        {"package_query_restarted_after_connection", L"连接已恢复，重新查询套餐"},
         {"error", L"认证失败"}};
     for (const auto &[key, title] : names)
         if (event == key)
@@ -356,7 +402,15 @@ std::wstring event_title(std::string_view event, std::string_view detail) {
     }
     return {};
 }
-LogLevel event_level(std::string_view event, std::string_view detail) {
+LogLevel event_level(std::string_view event, std::string_view detail, std::optional<unsigned> value) {
+    if (event == "package_query_summary") return LogLevel::Warning;
+    if (event == "package_query_credential_unavailable") return LogLevel::Error;
+    if (event == "package_query_state" && value) {
+        if (*value == unsigned(PackageState::Ready)) return LogLevel::Success;
+        if (*value == unsigned(PackageState::Partial)) return LogLevel::Warning;
+        if (*value == unsigned(PackageState::Idle) || *value == unsigned(PackageState::Loading)) return LogLevel::Info;
+        return LogLevel::Error;
+    }
     if (event == "worker_authenticated" || event == "worker_network_available" || event == "internet_probe_ok" ||
         event == "campus_paused" || event == "campus_resumed" || event == "password_changed")
         return LogLevel::Success;
@@ -398,12 +452,13 @@ LogResult read_log_records(const std::filesystem::path &directory, const LogQuer
             if (line.size() > 2048)
                 continue;
             const auto event = json_field(line, "event"), detail = json_field(line, "detail");
-            const auto title = event_title(event, detail);
+            const auto value = json_number(line, "value");
+            const auto title = event_title(event, detail, value);
             if (title.empty())
                 continue;
             const auto time = parse_log_time(json_field(line, "time"));
             if (time)
-                selection.consider({time, event_level(event, detail), title, {}, event});
+                selection.consider({time, event_level(event, detail, value), title, {}, event});
         }
     }
     return selection.finish();

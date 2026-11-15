@@ -10,6 +10,12 @@
 
 namespace scau::desktop {
 enum class PackageState { Idle, Loading, Ready, Partial, CertificateError, NetworkError, AuthError, Unsupported, TlsError };
+enum class PackageSummaryResult {
+    NotInspected, Empty, DecodeError, Html, InvalidJson, MissingEnvelope,
+    InvalidEnvelope, MissingItems, InvalidItems, EmptyItems, TooManyItems,
+    UnrecognizedItems, Parsed, TooLarge, InvalidHttp
+};
+struct PackageDiagnostics;
 struct BillingDate {
     int year{}, month{}, day{};
     std::optional<int> seconds;
@@ -45,7 +51,7 @@ std::optional<BillingDate> estimate_package_expiry(const PackageInfo& info, std:
 std::wstring package_status_text(PackageState state);
 // Only the observed legacy envelope/label-value items are mapped. No guessed
 // API fields; server dates remain separate from display-only forecasts.
-PackageInfo parse_package_response(std::wstring_view json);
+PackageInfo parse_package_response(std::wstring_view json, PackageDiagnostics* diagnostics = nullptr);
 PackageInfo parse_package_detail(std::wstring_view html);
 // Private, credential-bearing route from the known server item. The caller
 // must wipe it; never put it in UI state, persistence, diagnostics or logs.
@@ -59,6 +65,12 @@ struct PackageDiagnostics {
     PackageStage stage = PackageStage::Interface;
     unsigned interface_index = 0;
     unsigned long transport_error{}, http_status{}, tls_library_error{}, detail_http_status{};
+    unsigned long response_bytes{};
+    detail::TransportState transport_state = detail::TransportState::NetworkError;
+    bool http_complete = false;
+    PackageSummaryResult summary_result = PackageSummaryResult::NotInspected;
+    unsigned summary_items{};
+    bool detail_route_available = false;
     bool tls_connected = false, legacy_tls_used = false;
     std::string content_type;
     bool certificate_checks_disabled = false;
