@@ -1033,9 +1033,9 @@ class App {
                                                      std::chrono::month{local.wMonth}, std::chrono::day{local.wDay}};
             text(Home, HomeBalance, L"余额 " + (billing.state == PackageState::Loading && !billing.balance
                                                    ? std::wstring(L"加载中") : money_text(billing.balance)));
-            const auto query_status = package_status_text(billing.state);
+            const auto query_status = package_status_text(billing);
             text(Home, HomeExpiry, !billing.balance && !query_status.empty() ? query_status : package_expiry_text(billing, today));
-            text(Home, PackageStatus, package_status_text(billing.state));
+            text(Home, PackageStatus, package_status_text(billing));
             text(Home, HomeDevices, device_count_text(billing.online_devices));
             text(Home, Action, settings.mini && !portal_ticket.empty() ? L"登录" : connected_or_busy(status) ? L"断开连接" : credentials ? L"连接" : L"登录");
             text(Home, Login, !portal_ticket.empty() ? L"断开连接" : L"登录");
@@ -1164,7 +1164,7 @@ class App {
                 put(HomeBalance, {width - 184, 254, 156, 26}, status == Status::Online);
                 put(HomeExpiry, {width - 184, 282, 156, 24}, status == Status::Online);
                 put(PackageStatus, {28, 508, width - 56, 24}, show_details && status == Status::Online &&
-                    !package_status_text(package_for(home_package_account()).state).empty());
+                    !package_status_text(package_for(home_package_account())).empty());
                 put(Progress, {28, 321, width - 56, 3},
                     status == Status::Connecting || status == Status::Recovering ||
                         status == Status::Loading);
@@ -2627,7 +2627,7 @@ void App::paint_page(Page &p) {
                     renderer.icon(Icon::User, {28, 184, 14, 14}, RGB(139, 155, 132));
                 if (show_details) {
                     const float detail_height = status == Status::Online &&
-                        !package_status_text(package_for(home_package_account()).state).empty() ? 128.f : 98.f;
+                        !package_status_text(package_for(home_package_account())).empty() ? 128.f : 98.f;
                     renderer.fill({0, 416, w, detail_height}, White, 8);
                     renderer.outline({.5f, 416.5f, w - 1, detail_height - 1}, Line, 7.5f);
                     renderer.line(w / 3, 434, w / 3, 496, Line);

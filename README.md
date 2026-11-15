@@ -2,9 +2,9 @@
 
 华南农业大学校园网 Windows 原生客户端，使用 C++20、Win32、Direct2D 和 DirectWrite，无网页运行时。
 
-[下载安装包](https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.14.2-preview) · [首次使用](docs/SCAU-First-Run-0.14.2.md) · [验证报告](docs/Network-Delivery-Results-0.14.2.md)
+[下载安装包](https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.14.3-preview) · [首次使用](docs/SCAU-First-Run-0.14.3.md) · [验证报告](docs/Network-Delivery-Results-0.14.3.md)
 
-0.14.2 修复摘要没有显示字段时提前放弃详情查询的问题，补充 HTTP 完整性与摘要解析诊断，并在“记录”页显示套餐查询结果，见 [查询说明](docs/Package-Query-0.14.2.md)。每次版本变更提交并推送 GitHub，通过对应 CI 后发布签名 Release，客户端才能检查到更新。
+0.14.3 修复旧自助接口拒绝被误报为数据不可用的问题，主页展开详情显示拒绝码，日志记录对应数字，见 [查询说明](docs/Package-Query-0.14.3.md)。每次版本变更提交并推送 GitHub，通过对应 CI 后发布签名 Release，客户端才能检查到更新。
 
 ## 使用
 
@@ -26,7 +26,7 @@
 
 账号和密码保存在当前 Windows 用户的凭据管理器；`%LOCALAPPDATA%\ScauLink` 保存设置、账号随机标识及脱敏记录。密码不进入命令行、普通配置或日志。学校旧证书兼容限定于学校端点，GitHub 更新使用正常证书验证。仓库、安装包和源码包均不包含私人抓包、配置、Cookie 或发布私钥。
 
-本版 Release CTest **36/36** 通过，新增离线回归覆盖摘要无显示字段仍读取详情、HTTP 200 但响应不完整，以及“记录”页套餐状态与脱敏解析。原有合成主页场景检查 2/2 通过，详见 [验证报告](docs/Network-Delivery-Results-0.14.2.md)。0.14.1 的本机空配置目录只读实网查询属于历史验证；本版报告故障的电脑仍待复测。
+本版 Release CTest **36/36** 通过，包含两个原生合成主页场景，并验证旧协议拒绝码及异常标记的边界。本机有效账号只读查询取得余额与周期费用；不含真实凭据的空查询取得 54 字节拒绝响应并正确分类。报告电脑仍待确认其实际拒绝码，尚不能声称已恢复查询，详见 [验证报告](docs/Network-Delivery-Results-0.14.3.md)。
 
 客户端按认证核心与运行库的实际摘要决定更新方式。此前本机普通权限下完成的 Web 新登录、SCAUNET_1x 登录及核心崩溃后重登属于 [0.12.0 历史证据](docs/Network-Delivery-Results-0.12.0.md)。本版未重新实测无线新登录、其他电脑、Windows 实际重启、漫游、休眠或长时在线，也未提交真实改密及校园网暂停／恢复。
 

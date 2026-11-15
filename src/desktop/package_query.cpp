@@ -88,6 +88,24 @@ struct WipeBytes {
     ~WipeBytes() { SecureZeroMemory(text.data(), text.size()); }
 };
 PackageInfo failed(PackageState state) { PackageInfo info; info.state = state; return info; }
+std::optional<unsigned> legacy_rejection(std::wstring_view text) {
+    if (text.size() > 524288) return {};
+    while (!text.empty() && (std::iswspace(text.front()) || text.front() == L'\ufeff')) text.remove_prefix(1);
+    while (!text.empty() && std::iswspace(text.back())) text.remove_suffix(1);
+    // Observed on login_judge2.jsf with a protocol-valid, credential-free
+    // negative control. Match the entire bounded marker, never a substring
+    // in JSON, HTML, a URL, or an arbitrary server message.
+    constexpr std::wstring_view prefix = L"&errorMsg=";
+    if (!text.starts_with(prefix) || !text.ends_with(L"&")) return {};
+    const auto number = text.substr(prefix.size(), text.size() - prefix.size() - 1);
+    if (number.empty() || number.size() > 3 || (number.size() > 1 && number.front() == L'0')) return {};
+    unsigned code = 0;
+    for (auto ch : number) {
+        if (ch < L'0' || ch > L'9') return {};
+        code = code * 10 + unsigned(ch - L'0');
+    }
+    return code;
+}
 winrt::Windows::Data::Json::JsonArray summary_items(std::wstring_view text, PackageDiagnostics* diagnostics) {
     using namespace winrt::Windows::Data::Json;
     const auto result = [&](PackageSummaryResult value) { if (diagnostics) diagnostics->summary_result = value; };
@@ -274,10 +292,29 @@ std::wstring package_status_text(PackageState state) {
     default: return {};
     }
 }
+std::wstring package_status_text(const PackageInfo& info) {
+    if (info.state != PackageState::AuthError || !info.query_rejection_code)
+        return package_status_text(info.state);
+    const auto code = *info.query_rejection_code;
+    const auto message = code == 0 ? L"自助服务账号或密码未通过" :
+        code == 2 ? L"自助接口拒绝访问" : L"自助接口拒绝查询";
+    return L"套餐查询：" + std::wstring(message) + L"（代码 " + std::to_wstring(code) + L"）";
+}
 PackageInfo parse_package_response(std::wstring_view text, PackageDiagnostics* diagnostics) {
     using namespace winrt::Windows::Data::Json;
     PackageInfo info;
     info.state = PackageState::Unsupported;
+    if (diagnostics) diagnostics->legacy_error_code.reset();
+    if (const auto code = legacy_rejection(text)) {
+        info.state = PackageState::AuthError;
+        info.query_rejection_code = code;
+        if (diagnostics) {
+            diagnostics->summary_result = PackageSummaryResult::LegacyRejected;
+            diagnostics->summary_items = 0;
+            diagnostics->legacy_error_code = code;
+        }
+        return info;
+    }
     const auto items = summary_items(text, diagnostics);
     if (!items) return info;
     try {
@@ -409,6 +446,7 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
     }
     Wipe decoded_wipe{*decoded};
     auto info = parse_package_response(*decoded, diagnostics);
+    if (info.state == PackageState::AuthError) return info;
     if (cancel && cancel->load()) return info;
 
     // The server's observed index=1 link establishes an isolated web session.

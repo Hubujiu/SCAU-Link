@@ -6,11 +6,36 @@
 #include "protocol.hpp"
 #include "desktop/school_https.hpp"
 #include "desktop/service_query.hpp"
+#include "selfservice_crypto.hpp"
 #include <fstream>
 #include <roapi.h>
 #include <iostream>
 
 int wmain(int argc, wchar_t** argv) {
+    if (argc == 2 && std::wstring_view(argv[1]) == L"--public-rejected-summary") {
+        if (FAILED(RoInitialize(RO_INIT_MULTITHREADED))) return 3;
+        try {
+            // Credential-free negative control. This branch never opens the
+            // account store or submits a real username/password.
+            const auto encoded = scau::selfservice_encode_query(
+                L"userid=&password=&userip=255.255.255.255&callBack=ballInfo&channel=su");
+            scau::desktop::detail::TlsDiagnostics tls;
+            const auto reply = scau::desktop::detail::school_https_request("GET",
+                "/selfservice/module/scgroup/web/login_judge2.jsf?s=" + encoded, {}, &tls);
+            const auto text = scau::desktop::detail::decode_school_response(reply.response.body, reply.response.content_type);
+            scau::desktop::PackageDiagnostics diagnostic;
+            const auto info = text ? scau::desktop::parse_package_response(*text, &diagnostic) : scau::desktop::PackageInfo{};
+            const bool passed = reply.state == scau::desktop::detail::TransportState::Complete &&
+                reply.response.status == 200 && info.state == scau::desktop::PackageState::AuthError &&
+                diagnostic.legacy_error_code.has_value();
+            std::cout << "{\"credentialFreeControl\":true,\"passed\":" << (passed ? "true" : "false")
+                << ",\"httpStatus\":" << reply.response.status << ",\"httpComplete\":" << (reply.response.complete ? "true" : "false")
+                << ",\"bodyBytes\":" << reply.response.body.size() << ",\"queryState\":" << int(info.state)
+                << ",\"summaryResult\":" << int(diagnostic.summary_result) << ",\"legacyError\":"
+                << (diagnostic.legacy_error_code ? std::to_string(*diagnostic.legacy_error_code) : "null") << "}\n";
+            RoUninitialize(); return passed ? 0 : 1;
+        } catch (...) { RoUninitialize(); std::cout << "{\"credentialFreeControl\":true,\"passed\":false}\n"; return 1; }
+    }
     if (argc == 2 && (std::wstring_view(argv[1]) == L"--public-tls" ||
                       std::wstring_view(argv[1]) == L"--public-empty-post")) {
         scau::desktop::detail::TlsDiagnostics diagnostics;
@@ -86,6 +111,9 @@ int wmain(int argc, wchar_t** argv) {
         credential.clear();
         std::cout << "{\"savedAccountAvailable\":true,\"queryState\":" << int(info.state)
                   << ",\"queryStage\":" << int(diagnostics.stage) << ",\"interfaceIndex\":" << diagnostics.interface_index
+                  << ",\"summaryResult\":" << int(diagnostics.summary_result)
+                  << ",\"responseBytes\":" << diagnostics.response_bytes
+                  << ",\"legacyError\":" << (diagnostics.legacy_error_code ? std::to_string(*diagnostics.legacy_error_code) : "null")
                   << ",\"transportError\":" << diagnostics.transport_error << ",\"httpStatus\":" << diagnostics.http_status
                   << ",\"tlsConnected\":" << (diagnostics.tls_connected ? "true" : "false")
                   << ",\"tlsError\":" << diagnostics.tls_library_error

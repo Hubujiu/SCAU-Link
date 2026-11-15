@@ -1,0 +1,50 @@
+{
+  "product": "SCAU Link",
+  "version": "0.14.3",
+  "releaseChannel": "preview",
+  "previewReason": "旧自助拒绝响应识别及本机正反例通过；报告电脑的实际拒绝码仍待复测",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-15T08:03:15.009567+00:00",
+  "desktopSha256": "3b094e58994bede1a806c10164a036cf70b8b2711414a0423a99047c61557f2a",
+  "authenticationSha256": "3e7c3b0e7dcd64105642ad7984fc9651b672b26ab73bec66f14e7d6564e5970d",
+  "updaterSha256": "7ded54a442746ee26c3122327f4b7b17b25e070cf1cb691f43877a848cac9589",
+  "automatedTests": {
+    "passed": 36,
+    "total": 36,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 2,
+    "total": 2,
+    "executedOnThisBuild": 2,
+    "method": "Synthetic native control text, not full visual inspection.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "credentialFreeSchoolRejection": {
+    "passed": true,
+    "httpStatus": 200,
+    "bodyBytes": 54,
+    "legacyError": 0,
+    "evidence": "source/docs/network-delivery-0.14.3/public-rejection.json"
+  },
+  "ownAccountReadOnlyQuery": {
+    "passed": true,
+    "balanceAvailable": true,
+    "cycleFeeAvailable": true,
+    "networkAuthenticationStarted": false,
+    "evidence": "source/docs/network-delivery-0.14.3/own-package.json"
+  },
+  "protectedFilesMatchVersion": "0.14.2",
+  "publication": {
+    "status": "release-candidate",
+    "tag": "v0.14.3-preview",
+    "note": "Generated before publication; public status is determined by the GitHub Release."
+  },
+  "notVerified": [
+    "The reporting computer exact rejection code and successful balance retrieval.",
+    "Fresh real network authentication, reboot, roaming, long-duration stability and full visual inspection."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false
+}

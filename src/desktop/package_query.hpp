@@ -13,7 +13,7 @@ enum class PackageState { Idle, Loading, Ready, Partial, CertificateError, Netwo
 enum class PackageSummaryResult {
     NotInspected, Empty, DecodeError, Html, InvalidJson, MissingEnvelope,
     InvalidEnvelope, MissingItems, InvalidItems, EmptyItems, TooManyItems,
-    UnrecognizedItems, Parsed, TooLarge, InvalidHttp
+    UnrecognizedItems, Parsed, TooLarge, InvalidHttp, LegacyRejected
 };
 struct PackageDiagnostics;
 struct BillingDate {
@@ -29,6 +29,7 @@ struct PackageInfo {
     std::optional<unsigned> cycle_days;
     std::optional<bool> service_normal; // Unknown is distinct from an explicitly paused/abnormal service.
     std::optional<unsigned> online_devices;
+    std::optional<unsigned> query_rejection_code; // Bounded legacy error code; never server text.
     std::wstring name;
 };
 std::optional<std::int64_t> parse_money(std::wstring_view text);
@@ -49,6 +50,7 @@ std::optional<BillingDate> estimate_next_charge(const PackageInfo& info, std::ch
 // This display-only forecast never overwrites the server's expires field.
 std::optional<BillingDate> estimate_package_expiry(const PackageInfo& info, std::chrono::year_month_day today);
 std::wstring package_status_text(PackageState state);
+std::wstring package_status_text(const PackageInfo& info);
 // Only the observed legacy envelope/label-value items are mapped. No guessed
 // API fields; server dates remain separate from display-only forecasts.
 PackageInfo parse_package_response(std::wstring_view json, PackageDiagnostics* diagnostics = nullptr);
@@ -70,6 +72,7 @@ struct PackageDiagnostics {
     bool http_complete = false;
     PackageSummaryResult summary_result = PackageSummaryResult::NotInspected;
     unsigned summary_items{};
+    std::optional<unsigned> legacy_error_code;
     bool detail_route_available = false;
     bool tls_connected = false, legacy_tls_used = false;
     std::string content_type;

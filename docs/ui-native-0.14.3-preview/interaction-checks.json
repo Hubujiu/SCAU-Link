@@ -1,0 +1,12 @@
+[
+  {
+    "name": "network-only home retains the package account and balance",
+    "passed": true,
+    "method": "native synthetic control text from this build CTest"
+  },
+  {
+    "name": "wireless 1x home shows its queried balance",
+    "passed": true,
+    "method": "native synthetic control text from this build CTest"
+  }
+]

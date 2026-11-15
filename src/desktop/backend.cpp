@@ -230,6 +230,7 @@ void Backend::package_work() {
                     log("package_query_transport_state", int(diagnostic.transport_state));
                     log("package_query_http_complete", diagnostic.http_complete);
                     log("package_query_summary", int(diagnostic.summary_result));
+                    if (diagnostic.legacy_error_code) log("package_query_legacy_error", *diagnostic.legacy_error_code);
                     log("package_query_summary_items", diagnostic.summary_items);
                     log("package_query_detail_route", diagnostic.detail_route_available);
                     log("package_query_detail_login_http", diagnostic.detail_login_status);

@@ -192,6 +192,19 @@ int main() {
                     "HTTP 200 headers without a complete response are distinguished from summary parsing failures");
         }
         {
+            Fixture f;
+            std::wstring short_reply;
+            for (unsigned i = 0; i < 21; ++i) short_reply += L"\r\n";
+            short_reply += L"&errorMsg=0&";
+            require(winrt::to_string(short_reply).size() == 54, "Synthetic short-reply regression has the observed response size");
+            f.summary_override = short_reply; PackageDiagnostics d; const auto info = f.query(&d);
+            require(f.requests == 1 && d.http_status == 200 && d.http_complete && d.response_bytes == 54 &&
+                    d.legacy_error_code == 0 && d.summary_result == PackageSummaryResult::LegacyRejected &&
+                    info.state == PackageState::AuthError && info.query_rejection_code == 0 &&
+                    !info.balance && !info.monthly_fee && !d.detail_route_available,
+                    "A complete HTTP 200 legacy rejection reports its code and never starts a guessed detail login");
+        }
+        {
             Fixture f; f.rotate_cookie = true; PackageDiagnostics d; const auto info = f.query(&d);
             require(f.requests == 4 && d.billing_requested && d.billing_detail_matched && d.billing_http_status == 200 &&
                 info.balance == 12345 && info.cycle_fee == 2450 && info.cycle_days == 31 && !info.monthly_fee && !info.next_charge &&

@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "queryState": 2,
+  "httpStatus": 200,
+  "summaryResult": 12,
+  "balanceAvailable": true,
+  "cycleFeeAvailable": true,
+  "billingDetailMatched": true,
+  "networkAuthenticationStarted": false,
+  "rawResponseIncluded": false,
+  "credentialsIncluded": false
+}

@@ -1,0 +1,10 @@
+{
+  "credentialFreeControl": true,
+  "passed": true,
+  "httpStatus": 200,
+  "httpComplete": true,
+  "bodyBytes": 54,
+  "queryState": 6,
+  "summaryResult": 15,
+  "legacyError": 0
+}

@@ -128,6 +128,22 @@ int main() {
         for (auto text : {L"<html>login</html>", L"{bad}", L"{\"balance\":0}", L"evil({});", L"{}"})
             require(parse_package_response(text).state == PackageState::Unsupported, "Unknown schema must fail closed");
         require(parse_package_response(std::wstring(524289, L'x')).state == PackageState::Unsupported, "Response size bound");
+        for (unsigned code : {0u, 1u, 2u, 9u, 999u}) {
+            const auto marker = L"\r\n &errorMsg=" + std::to_wstring(code) + L"&\r\n";
+            PackageDiagnostics d; const auto rejected = parse_package_response(marker, &d);
+            require(rejected.state == PackageState::AuthError && rejected.query_rejection_code == code &&
+                    d.summary_result == PackageSummaryResult::LegacyRejected && d.legacy_error_code == code &&
+                    !rejected.balance && !package_fee(rejected) &&
+                    package_status_text(rejected).find(std::to_wstring(code)) != std::wstring::npos,
+                    "An exact legacy rejection is an explicit login failure, including code zero, without fabricated account data");
+        }
+        for (auto text : {L"&errorMsg=&", L"&errorMsg=00&", L"&errorMsg=-1&", L"&errorMsg=1000&",
+                L"&errorMsg=0&errorMsg=2&", L"&errorMsg=0&success=0&", L"text&errorMsg=0&",
+                L"<script>errorMsg=0</script>", L"&errorMsg=0junk&"}) {
+            PackageDiagnostics d;
+            require(parse_package_response(text, &d).state == PackageState::Unsupported && !d.legacy_error_code,
+                    "Embedded, duplicate, contradictory, malformed or unbounded rejection markers stay unknown");
+        }
         for (const auto& [text, expected] : {
                 std::pair{L"", PackageSummaryResult::Empty},
                 {L"<html><body>Login required</body></html>", PackageSummaryResult::Html},
