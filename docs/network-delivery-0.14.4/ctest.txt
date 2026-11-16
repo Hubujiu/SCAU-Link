@@ -1,0 +1,79 @@
+Test project D:/Workspace/AiProjects/Ruijie/build
+      Start  1: updates-tests
+ 1/37 Test  #1: updates-tests ....................   Passed    2.80 sec
+      Start  2: desktop-tests
+ 2/37 Test  #2: desktop-tests ....................   Passed    0.08 sec
+      Start  3: logs-tests
+ 3/37 Test  #3: logs-tests .......................   Passed    0.03 sec
+      Start  4: account-pointer-tests
+ 4/37 Test  #4: account-pointer-tests ............   Passed    1.06 sec
+      Start  5: list-scrollbar-tests
+ 5/37 Test  #5: list-scrollbar-tests .............   Passed    1.74 sec
+      Start  6: accounts-tests
+ 6/37 Test  #6: accounts-tests ...................   Passed    0.10 sec
+      Start  7: desktop-backend-tests
+ 7/37 Test  #7: desktop-backend-tests ............   Passed    2.35 sec
+      Start  8: profile-store-tests
+ 8/37 Test  #8: profile-store-tests ..............   Passed    0.01 sec
+      Start  9: connection-setup-tests
+ 9/37 Test  #9: connection-setup-tests ...........   Passed    0.04 sec
+      Start 10: portal-auth-tests
+10/37 Test #10: portal-auth-tests ................   Passed    3.57 sec
+      Start 11: wireless-session-tests
+11/37 Test #11: wireless-session-tests ...........   Passed    0.05 sec
+      Start 12: wireless-connection-tests
+12/37 Test #12: wireless-connection-tests ........   Passed    0.13 sec
+      Start 13: password-change-tests
+13/37 Test #13: password-change-tests ............   Passed    0.03 sec
+      Start 14: wlan-8021x-tests
+14/37 Test #14: wlan-8021x-tests .................   Passed    0.05 sec
+      Start 15: protocol-tests
+15/37 Test #15: protocol-tests ...................   Passed    0.02 sec
+      Start 16: observation-tests
+16/37 Test #16: observation-tests ................   Passed    0.01 sec
+      Start 17: maintenance-tests
+17/37 Test #17: maintenance-tests ................   Passed    0.01 sec
+      Start 18: recovery-tests
+18/37 Test #18: recovery-tests ...................   Passed    0.01 sec
+      Start 19: failure-tests
+19/37 Test #19: failure-tests ....................   Passed    0.01 sec
+      Start 20: selfservice-crypto-tests
+20/37 Test #20: selfservice-crypto-tests .........   Passed    0.01 sec
+      Start 21: package-tests
+21/37 Test #21: package-tests ....................   Passed    0.03 sec
+      Start 22: startup-tests
+22/37 Test #22: startup-tests ....................   Passed    0.09 sec
+      Start 23: billing-query-tests
+23/37 Test #23: billing-query-tests ..............   Passed    0.06 sec
+      Start 24: service-query-tests
+24/37 Test #24: service-query-tests ..............   Passed    0.08 sec
+      Start 25: http-response-tests
+25/37 Test #25: http-response-tests ..............   Passed    0.01 sec
+      Start 26: school-https-tests
+26/37 Test #26: school-https-tests ...............   Passed    0.41 sec
+      Start 27: exchange-tests
+27/37 Test #27: exchange-tests ...................   Passed    0.01 sec
+      Start 28: capture-tests
+28/37 Test #28: capture-tests ....................   Passed    0.03 sec
+      Start 29: supervisor-tests
+29/37 Test #29: supervisor-tests .................   Passed    1.17 sec
+      Start 30: sam-crypto-tests
+30/37 Test #30: sam-crypto-tests .................   Passed    0.01 sec
+      Start 31: sam-tests
+31/37 Test #31: sam-tests ........................   Passed    0.01 sec
+      Start 32: sam-runtime-tests
+32/37 Test #32: sam-runtime-tests ................   Passed    0.01 sec
+      Start 33: sam-udp-tests
+33/37 Test #33: sam-udp-tests ....................   Passed    0.01 sec
+      Start 34: controller-tests
+34/37 Test #34: controller-tests .................   Passed    0.79 sec
+      Start 35: package-ui-tests
+35/37 Test #35: package-ui-tests .................   Passed    1.81 sec
+      Start 36: summary-tests
+36/37 Test #36: summary-tests ....................   Passed    0.20 sec
+      Start 37: network-lab-tests
+37/37 Test #37: network-lab-tests ................   Passed   12.48 sec
+
+100% tests passed, 0 tests failed out of 37
+
+Total Test time (real) =  29.32 sec

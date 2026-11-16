@@ -3137,12 +3137,22 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
 } // namespace
 } // namespace scau::desktop
 
+#include "startup.hpp"
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     using namespace scau::desktop;
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     int argc = 0;
     LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv && argc == 2 && (std::wstring_view(argv[1]) == L"--repair-startup" ||
+                             std::wstring_view(argv[1]) == L"--remove-owned-startup")) {
+        int result = 0;
+        try {
+            if (std::wstring_view(argv[1]) == L"--remove-owned-startup") remove_owned_startup_task(executable_path());
+            else if (auto_start_enabled()) set_auto_start(true, executable_path());
+        } catch (const std::exception&) { result = 1; }
+        LocalFree(argv); CoUninitialize(); return result;
+    }
     App app;
     app.instance = instance;
     for (int i = 1; argv && i < argc; ++i) {

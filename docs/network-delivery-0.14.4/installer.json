@@ -1,0 +1,133 @@
+{
+  "version": "0.14.4",
+  "status": "passed",
+  "passed": 29,
+  "total": 29,
+  "checks": [
+    {
+      "name": "verified-isolated-test-installer",
+      "passed": true
+    },
+    {
+      "name": "qa-registry-namespace-unused",
+      "passed": true
+    },
+    {
+      "name": "test-path-confined-to-workspace",
+      "passed": true
+    },
+    {
+      "name": "running-app-mutex-blocks-install-without-closing-app",
+      "passed": true
+    },
+    {
+      "name": "custom-unicode-and-space-path-install",
+      "passed": true
+    },
+    {
+      "name": "chosen-directory-used-exactly-without-appending-another-folder",
+      "passed": true
+    },
+    {
+      "name": "installed-release-hash-SCAU-Link.exe",
+      "passed": true
+    },
+    {
+      "name": "installed-release-hash-scau-auth.exe",
+      "passed": true
+    },
+    {
+      "name": "installed-release-hash-scau-update.exe",
+      "passed": true
+    },
+    {
+      "name": "app-local-runtime-msvcp140.dll",
+      "passed": true
+    },
+    {
+      "name": "app-local-runtime-msvcp140_atomic_wait.dll",
+      "passed": true
+    },
+    {
+      "name": "app-local-runtime-vcruntime140.dll",
+      "passed": true
+    },
+    {
+      "name": "app-local-runtime-vcruntime140_1.dll",
+      "passed": true
+    },
+    {
+      "name": "corresponding-source-installed",
+      "passed": true
+    },
+    {
+      "name": "uninstall-registration-points-to-custom-directory",
+      "passed": true
+    },
+    {
+      "name": "fresh-install-does-not-enable-startup",
+      "passed": true
+    },
+    {
+      "name": "same-path-upgrade",
+      "passed": true
+    },
+    {
+      "name": "known-enabled-startup-command-relocated-in-isolated-key",
+      "passed": true
+    },
+    {
+      "name": "native-uninstaller-created",
+      "passed": true
+    },
+    {
+      "name": "running-app-mutex-also-blocks-uninstall",
+      "passed": true
+    },
+    {
+      "name": "uninstall-succeeds-without-app-running",
+      "passed": true
+    },
+    {
+      "name": "uninstall-removes-only-installed-application",
+      "passed": true
+    },
+    {
+      "name": "unrelated-files-preserved",
+      "passed": true
+    },
+    {
+      "name": "own-uninstall-and-startup-registration-removed",
+      "passed": true
+    },
+    {
+      "name": "install-with-unrelated-startup-value",
+      "passed": true
+    },
+    {
+      "name": "unrelated-startup-command-not-rewritten",
+      "passed": true
+    },
+    {
+      "name": "uninstall-with-unrelated-startup-value",
+      "passed": true
+    },
+    {
+      "name": "unrelated-startup-command-not-deleted",
+      "passed": true
+    },
+    {
+      "name": "production-startup-and-own-account-settings-untouched",
+      "passed": true
+    }
+  ],
+  "qaInstallerSha256": "b7539bddbe464232571c719e8c2a6b47fa69ee335d57819ac12300ad655428e4",
+  "qaOnly": true,
+  "testDirectoryOnNonSystemDrive": true,
+  "applicationLaunched": false,
+  "realAuthenticationChanged": false,
+  "networkDriverInstalled": false,
+  "productionRegistryChanged": false,
+  "settingsAndAccountsPreserved": true,
+  "checkedAt": "2026-11-16T06:25:34.365167+00:00"
+}

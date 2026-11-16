@@ -34,4 +34,17 @@ ConnectionSetup prepare_connection(const std::filesystem::path& directory,
     std::span<const ConnectionAdapter> adapters, DeviceIdentityReader identity = {});
 ConnectionSetup prepare_connection(const std::filesystem::path& directory);
 bool capture_driver_available();
+enum class CaptureDriverState { Ready, Starting, Missing, Stopped, AccessDenied, Failed };
+CaptureDriverState capture_driver_state(bool start_if_stopped = false);
+const wchar_t* capture_driver_message(CaptureDriverState state);
+// Wakes immediately on interface changes; bounded waits also cover driver readiness.
+class NetworkReadySignal {
+    void* event_{};
+    void* notification_{};
+public:
+    NetworkReadySignal();
+    ~NetworkReadySignal();
+    NetworkReadySignal(const NetworkReadySignal&) = delete;
+    void wait(unsigned milliseconds) const;
+};
 } // namespace scau::desktop

@@ -171,20 +171,28 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   Value: String;
+  StartupResult: Integer;
 begin
   if CurStep = ssPostInstall then begin
     { Preserve the enabled state; only relocate this application's known command. }
     if RegQueryStringValue(HKCU, '{#StartupKey}', '{#StartupName}', Value) and
        RecognizedStartupCommand(Value) then
       RegWriteStringValue(HKCU, '{#StartupKey}', '{#StartupName}', StartupCommand);
+#ifndef InstallerTest
+    Exec(ExpandConstant('{app}\SCAU-Link.exe'), '--repair-startup', '', SW_HIDE, ewWaitUntilTerminated, StartupResult);
+#endif
   end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   Value: String;
+  StartupResult: Integer;
 begin
   if CurUninstallStep = usUninstall then begin
+#ifndef InstallerTest
+    Exec(ExpandConstant('{app}\SCAU-Link.exe'), '--remove-owned-startup', '', SW_HIDE, ewWaitUntilTerminated, StartupResult);
+#endif
     { Never remove a startup entry belonging to a different portable copy. }
     if RegQueryStringValue(HKCU, '{#StartupKey}', '{#StartupName}', Value) and
        (CompareText(Value, StartupCommand) = 0) then

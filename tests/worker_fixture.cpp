@@ -96,6 +96,9 @@ int wmain(int argc, wchar_t** argv) {
         require(GetHandleInformation(opt.output, &flags) && !(flags & HANDLE_FLAG_INHERIT));
         require(!channel.authenticated() && !channel.unauthenticated() && !channel.network_available());
         if (opt.mode == L"preflight-terminal") { credentials.clear(); require(channel.finish(13)); return 0; }
+        if (opt.mode == L"capture-open-failed") {
+            credentials.clear(); require(channel.finish(4,"无法打开有线网卡：请检查抓包驱动和访问权限。")); return 0;
+        }
         require(channel.ready() && !channel.ready());
         credentials.clear();
 

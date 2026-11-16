@@ -3,6 +3,7 @@
 #include "protocol.hpp"
 #include "connection_setup.hpp"
 #include "package_query.hpp"
+#include "startup.hpp"
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -124,6 +125,7 @@ std::wstring startup_command(const std::filesystem::path &path) {
     return quote_argument(std::filesystem::absolute(path).wstring()) + L" --startup";
 }
 bool auto_start_enabled() {
+    try { if (startup_task_enabled(startup_task_name())) return true; } catch (const std::exception&) {}
     RegKey key;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, run_key, 0, KEY_QUERY_VALUE, &key.value) != ERROR_SUCCESS)
         return false;
@@ -132,16 +134,13 @@ bool auto_start_enabled() {
            type == REG_SZ && size > sizeof(wchar_t);
 }
 void set_auto_start(bool enabled, const std::filesystem::path &executable) {
+    // Keep the legacy Run entry if task registration fails.
+    configure_startup_task(enabled, executable, startup_task_name());
     RegKey key;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, run_key, 0, nullptr, 0, KEY_SET_VALUE, nullptr, &key.value,
                         nullptr) != ERROR_SUCCESS)
         throw std::runtime_error("Cannot update Windows startup");
-    if (enabled) {
-        const auto command = startup_command(executable);
-        if (RegSetValueExW(key.value, L"SCAULink", 0, REG_SZ, reinterpret_cast<const BYTE *>(command.c_str()),
-                           DWORD((command.size() + 1) * sizeof(wchar_t))) != ERROR_SUCCESS)
-            throw std::runtime_error("Cannot enable Windows startup");
-    } else {
+    {
         auto result = RegDeleteValueW(key.value, L"SCAULink");
         if (result != ERROR_SUCCESS && result != ERROR_FILE_NOT_FOUND)
             throw std::runtime_error("Cannot disable Windows startup");
@@ -386,7 +385,10 @@ std::wstring event_title(std::string_view event, std::string_view detail, std::o
         {"transport_lost", L"网卡连接中断"},
         {"package_query_credential_unavailable", L"套餐查询：无法读取本机保存的凭据"},
         {"package_query_restarted_after_connection", L"连接已恢复，重新查询套餐"},
-        {"error", L"认证失败"}};
+        {"startup_registration_failed", L"登录自启配置失败，保留原启动方式"},
+        {"capture_driver_unavailable", L"有线抓包驱动未就绪，请检查服务和权限"},
+        {"capture_adapter_open_failed", L"无法打开有线网卡，请检查抓包驱动和权限"},
+        {"error", L"认证环境异常"}};
     for (const auto &[key, title] : names)
         if (event == key)
             return title;
@@ -417,7 +419,8 @@ LogLevel event_level(std::string_view event, std::string_view detail, std::optio
     if (event == "worker_crashed" || event == "supervisor_retry_exhausted" || event == "supervisor_error" ||
         event == "supervisor_protocol_error" || event == "desktop_authentication_error" ||
         event == "original_client_conflict" || event == "accounts_exhausted" ||
-        event == "connection_setup_failed" || event == "server_failure_with_reason" ||
+        event == "connection_setup_failed" || event == "capture_driver_unavailable" ||
+        event == "capture_adapter_open_failed" || event == "startup_registration_failed" || event == "server_failure_with_reason" ||
         event == "server_failure_unrecognized" || event == "password_change_rejected" || event == "error" ||
         (event == "connection_state" && detail == "rejected"))
         return LogLevel::Error;

@@ -177,6 +177,9 @@ bool original_client_running() {
 struct PcapHeader {long seconds,microseconds;unsigned captured,original;};
 struct BpfProgram {unsigned length;void* instructions;};
 struct TransportError:std::runtime_error {using std::runtime_error::runtime_error;};
+struct CaptureOpenError:std::runtime_error {
+    CaptureOpenError():std::runtime_error("无法打开有线网卡：请检查 Npcap/WinPcap 驱动状态、网卡绑定和访问权限。") {}
+};
 class Transport {
     HMODULE module=nullptr;void* handle=nullptr;
     using Open=void* (__cdecl*)(const char*,int,int,int,char*);
@@ -195,7 +198,7 @@ public:
         try {
             auto open=symbol<Open>("pcap_open_live");close=symbol<Close>("pcap_close");send_packet=symbol<Send>("pcap_sendpacket");next=symbol<Next>("pcap_next_ex");
             char error[256]{};const auto device="\\Device\\NPF_"+adapter.name;handle=open(device.c_str(),65535,0,250,error);
-            if(!handle)throw std::runtime_error("Cannot open the selected adapter; run elevated and check the capture driver");
+            if(!handle)throw CaptureOpenError();
             BpfProgram filter{};
             auto compile=symbol<int (__cdecl*)(void*,BpfProgram*,const char*,int,unsigned)>("pcap_compile");
             auto set=symbol<int (__cdecl*)(void*,BpfProgram*)>("pcap_setfilter");
@@ -851,8 +854,10 @@ int wmain(int argc,wchar_t** argv) {
         for(int i=1;i<argc;++i)supervision.arguments.emplace_back(argv[i]);
         return scau::supervise_worker(supervision,secret,interrupted,[&](std::string_view event,long long value){logger->event(event,{},value);});
     }catch(const std::exception& error){
-        if(logger)logger->event("error",error.what());else std::cerr<<error.what()<<'\n';
-        if(channel)channel->finish(scau::auth_environment_error);
+        const bool capture_error=dynamic_cast<const CaptureOpenError*>(&error)!=nullptr;
+        if(logger)logger->event(capture_error?"capture_adapter_open_failed":"error",error.what());else std::cerr<<error.what()<<'\n';
+        // Only a fixed, credential-free diagnostic crosses the private channel.
+        if(channel)channel->finish(scau::auth_environment_error,capture_error?error.what():"");
         return channel?scau::auth_environment_error:1;
     }
 }

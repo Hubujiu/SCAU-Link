@@ -173,4 +173,52 @@ bool capture_driver_available() {
     return std::filesystem::is_regular_file(std::filesystem::path(system) / L"Npcap/wpcap.dll") ||
            std::filesystem::is_regular_file(std::filesystem::path(system) / L"wpcap.dll");
 }
+CaptureDriverState capture_driver_state(bool start_if_stopped) {
+    if (!capture_driver_available()) return CaptureDriverState::Missing;
+    wchar_t system[MAX_PATH]{}; GetSystemDirectoryW(system, MAX_PATH);
+    const auto name = std::filesystem::is_regular_file(std::filesystem::path(system)/L"Npcap/wpcap.dll") ? L"npcap" : L"npf";
+    struct Service { SC_HANDLE value; ~Service(){if(value)CloseServiceHandle(value);} };
+    Service manager{OpenSCManagerW(nullptr,nullptr,SC_MANAGER_CONNECT)};
+    if (!manager.value) return CaptureDriverState::AccessDenied;
+    Service service{OpenServiceW(manager.value,name,SERVICE_QUERY_STATUS)};
+    if (!service.value) return GetLastError()==ERROR_SERVICE_DOES_NOT_EXIST ? CaptureDriverState::Missing : CaptureDriverState::AccessDenied;
+    SERVICE_STATUS_PROCESS status{}; DWORD bytes{};
+    if (!QueryServiceStatusEx(service.value,SC_STATUS_PROCESS_INFO,reinterpret_cast<BYTE*>(&status),sizeof(status),&bytes))
+        return CaptureDriverState::Failed;
+    if (status.dwCurrentState==SERVICE_RUNNING) return CaptureDriverState::Ready;
+    if (status.dwCurrentState==SERVICE_START_PENDING || status.dwCurrentState==SERVICE_STOP_PENDING) return CaptureDriverState::Starting;
+    if (status.dwCurrentState!=SERVICE_STOPPED) return CaptureDriverState::Failed;
+    if (!start_if_stopped) return CaptureDriverState::Stopped;
+    Service starter{OpenServiceW(manager.value,name,SERVICE_START)};
+    if (!starter.value) return GetLastError()==ERROR_ACCESS_DENIED ? CaptureDriverState::AccessDenied : CaptureDriverState::Failed;
+    if (!StartServiceW(starter.value,0,nullptr)) {
+        const auto error=GetLastError();
+        if (error==ERROR_SERVICE_ALREADY_RUNNING) return CaptureDriverState::Ready;
+        return error==ERROR_ACCESS_DENIED ? CaptureDriverState::AccessDenied : CaptureDriverState::Failed;
+    }
+    return CaptureDriverState::Starting;
+}
+const wchar_t* capture_driver_message(CaptureDriverState state) {
+    switch(state) {
+    case CaptureDriverState::Ready: return L"";
+    case CaptureDriverState::Starting: return L"等待有线抓包驱动启动";
+    case CaptureDriverState::Missing: return L"有线抓包驱动未安装完整，请安装或修复 Npcap";
+    case CaptureDriverState::Stopped: return L"有线抓包驱动未启动，请启动 Npcap/NPF 服务";
+    case CaptureDriverState::AccessDenied: return L"无权启动或访问有线抓包驱动，请以管理员身份启动一次或修复 Npcap 权限";
+    default: return L"有线抓包驱动启动失败，请修复 Npcap 后重试";
+    }
+}
+NetworkReadySignal::NetworkReadySignal() {
+    event_=CreateEventW(nullptr,FALSE,FALSE,nullptr);
+    if (event_) NotifyIpInterfaceChange(AF_UNSPEC,[](void* context,PMIB_IPINTERFACE_ROW,MIB_NOTIFICATION_TYPE){
+        SetEvent(context);
+    },event_,FALSE,&notification_);
+}
+NetworkReadySignal::~NetworkReadySignal() {
+    if (notification_) CancelMibChangeNotify2(notification_);
+    if (event_) CloseHandle(event_);
+}
+void NetworkReadySignal::wait(unsigned milliseconds) const {
+    if (event_) WaitForSingleObject(event_,milliseconds); else Sleep(milliseconds);
+}
 } // namespace scau::desktop

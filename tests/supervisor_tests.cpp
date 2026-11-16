@@ -129,6 +129,10 @@ void test_malformed_credential_pipe() {
 }
 
 void test_recovery_and_terminal(const std::filesystem::path& fixture) {
+    const auto capture = run(config_for(fixture,L"capture-open-failed"));
+    require(capture.code==4 && capture.failure=="无法打开有线网卡：请检查抓包驱动和访问权限。" &&
+        capture.count("worker_ready")==0 && capture.count("worker_crashed")==0 && capture.count("worker_started")==1,
+        "Driver failure before worker ready must retain its reason without crash restart or account rejection");
     const auto available=run(config_for(fixture,L"network-only"));
     require(available.code==0 && available.count("worker_network_available")==1 &&
         available.count("worker_authenticated")==0,"Existing internet cannot authenticate a saved account");

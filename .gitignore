@@ -81,3 +81,14 @@ settings.ini
 !/docs/network-delivery-0.14.3/ctest.txt
 !/docs/network-delivery-0.14.3/public-rejection.json
 !/docs/network-delivery-0.14.3/own-package.json
+!/docs/Startup-Wired-0.14.4.md
+!/docs/SCAU-First-Run-0.14.4.md
+!/docs/Network-Delivery-Results-0.14.4.md
+!/docs/validation-0.14.4.json
+!/docs/ui-native-0.14.4-preview/
+/docs/ui-native-0.14.4-preview/*
+!/docs/ui-native-0.14.4-preview/interaction-checks.json
+!/docs/network-delivery-0.14.4/
+/docs/network-delivery-0.14.4/*
+!/docs/network-delivery-0.14.4/ctest.txt
+!/docs/network-delivery-0.14.4/installer.json

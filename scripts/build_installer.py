@@ -98,7 +98,7 @@ def source_archive(target):
                      and p.suffix.lower() not in {'.pyc','.pdb','.obj','.exe','.dll','.lib','.cur','.ani'})
     files.extend(ROOT/'ui/prototype/assets'/p for p in ['icons.js','LUCIDE-LICENSE'])
     files.extend(ROOT/'docs'/p for p in ['desktop-package-README.txt','installer-README.txt',
-                 'SCAU-Campus-Service-20261113.md','SCAU-Billing-Query-20261114.md','Package-Query-0.14.1.md',f'Package-Query-{version}.md',
+                 'SCAU-Campus-Service-20261113.md','SCAU-Billing-Query-20261114.md','Package-Query-0.14.1.md',
                  'SCAU-Automatic-Setup-20261114.md','SCAU-Wireless-Web-20261114.md',
                  'SCAU-Password-Change-20261114.md','SCAU-Connection-Modes-20261114.md',
                  'SCAU-Wireless-8021X-20261114.md','Network-Delivery-Lab.md',
@@ -107,6 +107,8 @@ def source_archive(target):
         'result.json','wired.json','wireless_8021x.json','restored.json','final-state.json',
         'controller.jsonl','watchdog.jsonl','preflight.json','baseline.json',
         'ctest-0.11.1.txt','offline-tests.txt'])
+    files.extend(ROOT/'docs'/f'{topic}-{version}.md' for topic in ['Package-Query','Startup-Wired']
+                 if (ROOT/'docs'/f'{topic}-{version}.md').is_file())
     files.extend(ROOT/'docs'/p for p in [f'SCAU-First-Run-{version}.md',
         f'Network-Delivery-Results-{version}.md', f'validation-{version}.json'])
     files.extend(p for p in (ROOT/'docs'/f'network-delivery-{version}').rglob('*')

@@ -369,6 +369,10 @@ void Backend::initialize() {
             logs_ = directory_ / L"logs";
             std::filesystem::create_directories(logs_);
             e.settings = load_settings(directory_);
+            if (options_.directory.empty() && e.settings.auto_start) {
+                try { set_auto_start(true, executable_); }
+                catch (const std::exception&) { log("startup_registration_failed"); }
+            }
             mode_ = e.settings.mode;
             preferences_ = e.settings;
             accounts_ = std::make_unique<AccountStore>(directory_);
@@ -647,6 +651,7 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                 return !cancelled();
             };
             int result = supervisor_error;
+            NetworkReadySignal network_ready;
             std::string failure_reason;
             std::wstring environment_problem;
             std::wstring attempted_username;
@@ -737,10 +742,11 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                                     Event e; e.status = Status::Waiting; e.username = found->info.username;
                                     e.account_id = id; e.message = L"等待无线网卡"; post(std::move(e));
                                 }
-                                waiting = true; if (!pause(1000)) break;
+                                waiting = true; network_ready.wait(100);
                             }
                         } else {
                         std::wstring waiting_message;
+                        ULONGLONG driver_deadline = 0;
                         while (!cancelled()) {
                             if (original_client_running()) {
                                 result = auth_environment_error;
@@ -750,6 +756,22 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                             }
                             const auto connection = prepare_connection(directory_);
                             if (connection.found && connection.link_up) {
+                                const auto driver = capture_driver_state(true);
+                                if (driver != CaptureDriverState::Ready) {
+                                    if (!driver_deadline) driver_deadline = GetTickCount64() + 30000;
+                                    if (driver != CaptureDriverState::Starting || GetTickCount64() >= driver_deadline) {
+                                        result = auth_environment_error;
+                                        environment_problem = driver == CaptureDriverState::Starting ? L"有线抓包驱动启动超时，请修复 Npcap 后重试" : capture_driver_message(driver);
+                                        log("capture_driver_unavailable", int(driver));
+                                        break;
+                                    }
+                                    if (waiting_message != capture_driver_message(driver)) {
+                                        Event e; e.status=Status::Waiting; e.username=found->info.username;
+                                        e.account_id=id; e.message=capture_driver_message(driver); post(std::move(e));
+                                        waiting_message=capture_driver_message(driver);
+                                    }
+                                    waiting=true; network_ready.wait(100); continue;
+                                }
                                 Event e; e.kind = EventKind::ConnectionReady;
                                 e.profile = true; e.adapter = connection.adapter;
                                 post(std::move(e));
@@ -767,8 +789,7 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                                 waiting_message = reason;
                             }
                             waiting = true;
-                            if (!pause(1000))
-                                break;
+                            network_ready.wait(100);
                         }
                         }
                         if (cancelled())

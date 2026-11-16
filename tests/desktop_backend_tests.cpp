@@ -398,16 +398,16 @@ int wmain() {
             f.wait([&] { return f.events.back().status == Status::Offline; });
             require(f.events.back().message.empty(), "Manual stop must clear the previous failure message");
         }
-        {
+        for (const auto reason : {"Windows 无线认证权限不足", "无法打开有线网卡：请检查抓包驱动和访问权限。"}) {
             BackendOptions options;
             options.demo_terminal = scau::auth_environment_error;
             options.demo_failure = true;
-            options.demo_failure_reason = "Windows 无线认证权限不足";
+            options.demo_failure_reason = reason;
             Fixture f(options);
             f.backend->connect();
             f.wait([&] { return f.state(Status::Error); });
             require(f.attempts().size() == 1, "Environment failure must stop without retrying all accounts");
-            require(f.events.back().message == L"Windows 无线认证权限不足", "Wireless infrastructure reason must reach the UI without becoming an account rejection");
+            require(f.events.back().message == utf8_to_wide(reason), "Infrastructure reason must reach the UI without becoming an account rejection");
         }
         {
             BackendOptions options;

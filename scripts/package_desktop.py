@@ -65,7 +65,9 @@ source_files.extend(root / 'ui/prototype/assets' / name for name in ['icons.js',
 source_files.append(root / 'docs/desktop-package-README.txt')
 source_files.append(root / 'docs/SCAU-Campus-Service-20261113.md')
 source_files.append(root / 'docs/SCAU-Billing-Query-20261114.md')
-source_files.extend(root / 'docs' / name for name in ['Package-Query-0.14.1.md', f'Package-Query-{version}.md'])
+source_files.extend(root / 'docs' / name for name in ['Package-Query-0.14.1.md'])
+source_files.extend(root / 'docs' / f'{topic}-{version}.md' for topic in ['Package-Query', 'Startup-Wired']
+                    if (root / 'docs' / f'{topic}-{version}.md').is_file())
 source_files.append(root / 'docs/SCAU-Automatic-Setup-20261114.md')
 source_files.extend(root / 'docs' / name for name in ['SCAU-Wireless-Web-20261114.md',
     'SCAU-Password-Change-20261114.md', 'SCAU-Connection-Modes-20261114.md'])

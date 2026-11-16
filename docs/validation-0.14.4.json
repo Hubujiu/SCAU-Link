@@ -1,0 +1,59 @@
+{
+  "product": "SCAU Link",
+  "version": "0.14.4",
+  "releaseChannel": "preview",
+  "previewReason": "登录任务与驱动诊断回归通过；未实测重启耗时，旧 NPF 的管理员权限问题仍需修复",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-16T06:24:48.679358+00:00",
+  "desktopSha256": "c939259f9d91a7af101605473ffdc4a95ca896ba0e101db04ad5be4fb752fc41",
+  "authenticationSha256": "56ef07533fd51bba22899eb6628bd77dbdb24f4191f69a32de8665878066a204",
+  "updaterSha256": "6f03f913bdc04c96c6637736dfef942cd9b540a8483c10709eb0c9f23a161cdc",
+  "automatedTests": {
+    "passed": 37,
+    "total": 37,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 2,
+    "total": 2,
+    "executedOnThisBuild": 2,
+    "method": "Synthetic native control text, not full visual inspection.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "startupTaskChecks": {
+    "passed": true,
+    "isolated": true,
+    "executedTask": false,
+    "normalUser": true,
+    "zeroDelay": true,
+    "batteryAllowed": true,
+    "networkPrerequisite": false,
+    "uninstallOwnershipVerified": true
+  },
+  "driverDiagnosis": {
+    "legacyWinPcap": true,
+    "driverStopped": true,
+    "serviceStartError": 5,
+    "repaired": false
+  },
+  "publication": {
+    "status": "release-candidate",
+    "tag": "v0.14.4-preview",
+    "note": "Generated before publication; public status is determined by the GitHub Release."
+  },
+  "notVerified": [
+    "Actual Windows reboot and login-to-network timing.",
+    "Wired authentication after administrator driver repair; existing connection was left running.",
+    "Sleep/resume, long-duration connectivity and full visual inspection."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false,
+  "installerChecks": {
+    "passed": 29,
+    "total": 29,
+    "qaOnly": true,
+    "productionRegistryChanged": false,
+    "evidence": "source/docs/network-delivery-0.14.4/installer.json"
+  }
+}
