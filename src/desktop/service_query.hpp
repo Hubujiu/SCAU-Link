@@ -6,7 +6,7 @@
 namespace scau::desktop {
 enum class CampusState { Unknown, Normal, Paused };
 enum class CampusAction { Pause, Resume };
-enum class CampusError { None, Network, Tls, Auth, Data, Stale, Permission };
+enum class CampusError { None, Network, Tls, Auth, Data, Stale, Permission, MissingPortalCredential, Certificate };
 enum class CampusOutcome { None, Success, Rejected, Unknown, Expired };
 struct CampusView {
     CampusState state = CampusState::Unknown;

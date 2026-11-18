@@ -40,13 +40,15 @@ int wmain(int argc,wchar_t** argv) {
     });
     int result=4;
     try {
-        AccountStore source(data_directory());const auto catalog=source.load();Credential saved;
+        AccountStore source(data_directory());const auto catalog=source.load();Credential saved, saved_portal;
         const auto* first=catalog.first_account();
         if(!first || !source.read(*first,saved))throw std::runtime_error("saved_credential_unavailable");
+        const bool has_portal = source.read_portal(*first, saved_portal);
         const auto fresh=trace.parent_path()/L"first-run";
         const auto prefix=L"SCAULink/DeliveryLab/"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(began);
         AccountStore target(fresh,prefix,prefix+L"/unused-legacy");AccountCatalog seeded;
-        const auto id=target.save(seeded,{},saved);saved.clear();
+        const auto id=target.save(seeded,{},saved,has_portal ? std::optional<std::wstring_view>{saved_portal.password} : std::nullopt);
+        saved.clear(); saved_portal.clear();
         struct Erase {
             AccountStore& store;AccountCatalog& catalog;std::string id;
             ~Erase(){try{store.remove(catalog,id);}catch(...){}}
@@ -60,10 +62,15 @@ int wmain(int argc,wchar_t** argv) {
         emit("probe_no_imported_configuration",!std::filesystem::exists(fresh/L"connection.scau") &&
             !std::filesystem::exists(fresh/L"wireless.ini"));
         const auto package=[&] {
+            Credential portal_credential;
+            if (!target.read_portal(*reopened.first_account(), portal_credential)) {
+                emit("probe_package_state", int(PackageState::MissingPortalCredential));
+                return;
+            }
             const auto network=current_wireless_network();
             const auto index=mode==L"--package"?0u:network.index;
             PackageDiagnostics diagnostics;
-            const auto info=query_package(credential,{},&diagnostics,nullptr,&cancel,{},index);
+            const auto info=query_package(portal_credential,{},&diagnostics,nullptr,&cancel,{},index);
             emit("probe_package_state",int(info.state));
             emit("probe_package_http",diagnostics.http_status);
             emit("probe_package_transport",diagnostics.transport_error);

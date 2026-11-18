@@ -92,3 +92,9 @@ settings.ini
 /docs/network-delivery-0.14.4/*
 !/docs/network-delivery-0.14.4/ctest.txt
 !/docs/network-delivery-0.14.4/installer.json
+!/docs/SCAU-First-Run-0.14.5.md
+!/docs/Network-Delivery-Results-0.14.5.md
+!/docs/validation-0.14.5.json
+!/docs/ui-native-0.14.5-preview/
+/docs/ui-native-0.14.5-preview/*
+!/docs/ui-native-0.14.5-preview/interaction-checks.json

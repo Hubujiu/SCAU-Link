@@ -114,7 +114,11 @@ enum Id {
     ConfirmPasswordInput,
     SubmitPasswordChange,
     PortalPasswordLink,
-    OfficialPasswordLink
+    OfficialPasswordLink,
+    PortalPasswordLabel,
+    PortalPasswordInput,
+    TestPortalPassword,
+    RemovePortalPassword
 };
 constexpr COLORREF paper = visual::Paper, pine = visual::Pine, ink = visual::Ink, muted = visual::Muted,
                    sage = visual::Soft, nav_bg = visual::Sidebar, line_color = visual::Line;
@@ -185,6 +189,8 @@ class App {
     std::map<std::string, std::pair<std::string, PackageInfo>> packages;
     std::string form_account_id, active_account_id, package_account_id;
     bool account_editor = false, login_after_save = false;
+    bool portal_test_busy = false, remove_portal_password = false;
+    unsigned portal_test_request = 0;
     bool account_service = false, campus_busy = false, campus_confirming = false;
     bool password_view = false, password_busy = false, password_confirming = false,
          password_submitted = false, password_official = false;
@@ -307,9 +313,13 @@ class App {
     }
     const PackageInfo& package_for(const std::string& id) const {
         static const PackageInfo missing;
+        static const PackageInfo unconfigured = [] {
+            PackageInfo info; info.state = PackageState::MissingPortalCredential; return info;
+        }();
         const auto* account = account_catalog.find(id);
+        if (account && account->portal_secret_id.empty()) return unconfigured;
         const auto found = packages.find(id);
-        return account && found != packages.end() && found->second.first == account->secret_id
+        return account && found != packages.end() && found->second.first == account->portal_secret_id
                    ? found->second.second : missing;
     }
     std::string home_package_account() const {
@@ -670,9 +680,9 @@ class App {
         if (!ctrl(Account, UserInput))
             return;
         SetWindowTextW(ctrl(Account, UserInput), entry ? entry->username.c_str() : L"");
-        SetWindowTextW(ctrl(Account, PasswordInput), L"");
+        clear_account_inputs();
         SendMessageW(ctrl(Account, PasswordInput), EM_SETCUEBANNER, 0,
-                     reinterpret_cast<LPARAM>(entry ? L"已保存" : L"密码"));
+                     reinterpret_cast<LPARAM>(entry ? L"留空保留已保存密码" : L"校园网密码"));
         text(Account, FormMessage, L"");
         int selected = -1;
         for (std::size_t n = 0; n < account_catalog.entries.size(); ++n)
@@ -711,7 +721,7 @@ class App {
     }
     bool campus_permitted() const {
         const auto* account = account_catalog.find(campus_account_id);
-        return !campus_busy && account && account->secret_id == campus_secret &&
+        return !campus_busy && account && account->portal_secret_id == campus_secret &&
                !campus_ticket.empty() && campus_view.error == CampusError::None &&
                (campus_view.can_pause || campus_view.can_resume);
     }
@@ -731,7 +741,7 @@ class App {
         account_editor = false;
         account_service = true;
         campus_account_id = std::move(id);
-        campus_secret = account_catalog.find(campus_account_id)->secret_id;
+        campus_secret = account_catalog.find(campus_account_id)->portal_secret_id;
         campus_view = {}; campus_ticket.clear(); campus_message.clear();
         campus_busy = false; campus_confirming = false;
         create_page(Account);
@@ -757,17 +767,58 @@ class App {
         label(p, L"账号", UserLabel);
         auto user =
             make_control(p.window, p.controls, L"EDIT", L"", UserInput, WS_TABSTOP | ES_AUTOHSCROLL, Body);
-        label(p, L"密码", PasswordLabel);
+        label(p, L"校园网密码", PasswordLabel);
         auto password = make_control(p.window, p.controls, L"EDIT", L"", PasswordInput,
                                      WS_TABSTOP | ES_AUTOHSCROLL | ES_PASSWORD, Body);
-        for (auto input : {user, password}) {
+        button(p, L"显示", PasswordEye);
+        label(p, L"统一门户密码（选填）", PortalPasswordLabel);
+        auto portal = make_control(p.window, p.controls, L"EDIT", L"", PortalPasswordInput,
+                                   WS_TABSTOP | ES_AUTOHSCROLL | ES_PASSWORD, Body);
+        button(p, L"测试", TestPortalPassword);
+        button(p, L"清除", RemovePortalPassword);
+        for (auto input : {user, password, portal}) {
             SendMessageW(input, EM_SETLIMITTEXT, 256, 0);
             SendMessageW(input, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, 0);
         }
         SendMessageW(password, EM_SETPASSWORDCHAR, L'●', 0);
+        SendMessageW(portal, EM_SETPASSWORDCHAR, L'●', 0);
         SendMessageW(user, EM_SETCUEBANNER, 0, reinterpret_cast<LPARAM>(L"校园网账号"));
-        button(p, L"显示", PasswordEye);
         button(p, L"保存", SaveCredential);
+    }
+    std::wstring account_form_username() const {
+        std::array<wchar_t, 257> user{};
+        GetWindowTextW(ctrl(Account, UserInput), user.data(), int(user.size()));
+        return user.data();
+    }
+    std::shared_ptr<Credential> account_form_credential(int field) const {
+        auto value = std::make_shared<Credential>();
+        value->username = account_form_username();
+        std::array<wchar_t, 257> password{};
+        GetWindowTextW(ctrl(Account, field), password.data(), int(password.size()));
+        value->password = password.data();
+        SecureZeroMemory(password.data(), sizeof(password));
+        return value;
+    }
+    bool has_saved_portal_password() const {
+        const auto* entry = account_catalog.find(form_account_id);
+        return entry && !entry->portal_secret_id.empty() && entry->username == account_form_username();
+    }
+    void clear_account_inputs() {
+        ++portal_test_request;
+        portal_test_busy = remove_portal_password = false;
+        for (const int field : {PasswordInput, PortalPasswordInput})
+            if (auto input = ctrl(Account, field)) SetWindowTextW(input, L"");
+        if (auto password = ctrl(Account, PasswordInput)) {
+            SendMessageW(password, EM_SETPASSWORDCHAR, L'●', 0);
+            text(Account, PasswordEye, L"显示");
+        }
+    }
+    void account_portal_input_changed() {
+        if (!ctrl(Account, PortalPasswordInput) || portal_test_busy || pending_credential) return;
+        if (!has_saved_portal_password()) remove_portal_password = false;
+        text(Account, FormMessage, L"");
+        update_page(Account);
+        layout();
     }
     void clear_password_fields() {
         for (int id : {OldPasswordInput, NewPasswordInput, ConfirmPasswordInput})
@@ -860,8 +911,7 @@ class App {
     void close_account_editor() {
         if (password_view) { clear_password_fields(); password_view = false; password_confirming = false; }
         account_editor = false;
-        if (ctrl(Account, PasswordInput))
-            SetWindowTextW(ctrl(Account, PasswordInput), L"");
+        clear_account_inputs();
         text(Account, FormMessage, L"");
         update_page(Account);
         account_transition(-14);
@@ -1084,10 +1134,22 @@ class App {
                  : connect_after_save() ? L"登录"
                                     : L"保存");
             const bool editable = !pending_credential && status != Status::Stopping;
-            for (int control : {UserInput, PasswordInput, SaveCredential, PasswordEye, AccountList,
-                                AddAccount, AccountBack})
+            for (int control : {UserInput, PasswordInput, SaveCredential, PasswordEye})
+                if (auto handle = ctrl(Account, control)) EnableWindow(handle, editable && !portal_test_busy);
+            for (int control : {AccountList, AddAccount, AccountBack})
                 if (auto handle = ctrl(Account, control))
                     EnableWindow(handle, editable);
+            if (auto portal = ctrl(Account, PortalPasswordInput)) {
+                const bool saved = has_saved_portal_password();
+                const bool enabled = editable && !portal_test_busy;
+                SendMessageW(portal, EM_SETCUEBANNER, 0, reinterpret_cast<LPARAM>(remove_portal_password ? L"保存后清除"
+                     : saved ? L"留空保留已保存密码" : L"用于余额、套餐和校园网自助服务"));
+                EnableWindow(portal, enabled && !remove_portal_password);
+                EnableWindow(ctrl(Account, TestPortalPassword), enabled && !remove_portal_password);
+                EnableWindow(ctrl(Account, RemovePortalPassword), enabled);
+                text(Account, TestPortalPassword, portal_test_busy ? L"测试中" : L"测试");
+                text(Account, RemovePortalPassword, remove_portal_password ? L"撤销清除" : L"清除");
+            }
             sync_account_list();
         } else if (id == Preferences) {
             SendMessageW(ctrl(Preferences, MiniToggle), BM_SETCHECK,
@@ -1207,11 +1269,15 @@ class App {
                 !editor && !service && account_catalog.entries.empty());
             put(UserLabel, {left, top, field, 22}, editor);
             put(UserInput, {left + 36, top + 44, field - 52, 20}, editor);
-            put(PasswordLabel, {left, top + 96, field, 22}, editor);
-            put(PasswordInput, {left + 36, top + 140, field - 82, 20}, editor);
-            put(PasswordEye, {left + field - 36, top + 132, 30, 36}, editor);
-            put(SaveCredential, {left, top + 202, field, 42}, editor);
-            put(FormMessage, editor ? Box{left, top + 253, field, 40} : Box{0, 86 + rows, width, 30}, !service);
+            put(PasswordLabel, {left, top + 74, field, 22}, editor);
+            put(PasswordInput, {left + 36, top + 118, field - 82, 20}, editor);
+            put(PasswordEye, {left + field - 36, top + 110, 30, 36}, editor);
+            put(PortalPasswordLabel, {left, top + 148, field - 88, 22}, editor);
+            put(RemovePortalPassword, {left + field - 80, top + 144, 80, 26}, editor && has_saved_portal_password());
+            put(PortalPasswordInput, {left + 36, top + 192, field - 132, 20}, editor);
+            put(TestPortalPassword, {left + field - 80, top + 178, 80, 44}, editor);
+            put(SaveCredential, {left, top + 238, field, 42}, editor);
+            put(FormMessage, editor ? Box{left, top + 286, field, 36} : Box{0, 86 + rows, width, 30}, !service);
             put(CampusRefresh, {width - 86, 0, 86, 34}, service);
             put(CampusUser, {left + 60, 100, field - 60, 28}, service);
             put(CampusStateValue, {left + 16, 202, field / 2 - 44, 36}, service);
@@ -1398,6 +1464,7 @@ class App {
         if (id != Account && password_view) {
             clear_password_fields(); password_view = false; account_editor = false; password_confirming = false;
         }
+        if (id != Account && current == Account && (account_editor || settings.mini)) clear_account_inputs();
         if (current == id && pages[id].window) {
             update_page(id);
             layout();
@@ -1453,7 +1520,7 @@ class App {
         const bool login_link = !portal_ticket.empty() ||
                                 (credentials && !connected_or_busy(status) && status != Status::Stopping);
         const int width = settings.mini ? 360 : 960;
-        const int height = settings.mini ? (current == Account ? 392
+        const int height = settings.mini ? (current == Account ? 432
                                             : current == Preferences
                                                 ? 174
                                                 : 226 + (message.empty() ? 0 : 34) + (login_link ? 38 : 0))
@@ -1585,7 +1652,7 @@ class App {
             GetWindowRect(window, &bounds);
             const bool login_link = !portal_ticket.empty() ||
                                     (credentials && !connected_or_busy(status) && status != Status::Stopping);
-            const int height = current == Account ? 392
+            const int height = current == Account ? 432
                                : current == Preferences
                                    ? 174
                                    : 226 + (message.empty() ? 0 : 34) + (login_link ? 38 : 0);
@@ -1626,6 +1693,14 @@ class App {
             }
             sync_account_list(); refresh_visible(); return;
         }
+        if (e->kind == EventKind::PortalTest) {
+            if (e->portal_test_request != portal_test_request || current != Account ||
+                !(account_editor || settings.mini) || password_view || account_service) return;
+            portal_test_busy = false;
+            text(Account, FormMessage, e->message);
+            refresh_visible();
+            return;
+        }
         if (e->kind == EventKind::Campus) {
             // A user-confirmed pause must also stop this client's recovery loop,
             // including when the user navigated away while the POST was pending.
@@ -1637,7 +1712,7 @@ class App {
                 status = Status::Stopping;
             }
             const auto* account = account_catalog.find(e->account_id);
-            if (account && account->secret_id == e->package_secret && e->campus.online_devices) {
+            if (account && account->portal_secret_id == e->package_secret && e->campus.online_devices) {
                 auto& cached = packages[e->account_id];
                 if (cached.first != e->package_secret) cached = {e->package_secret, {}};
                 cached.second.online_devices = e->campus.online_devices;
@@ -1645,7 +1720,7 @@ class App {
                 if (auto list = ctrl(Account, AccountList)) InvalidateRect(list, nullptr, FALSE);
             }
             if (account_service && e->campus_request == campus_request && e->account_id == campus_account_id &&
-                account && account->secret_id == e->package_secret) {
+                account && account->portal_secret_id == e->package_secret) {
                 campus_busy = false; campus_confirming = false;
                 campus_view = e->campus; campus_ticket = e->campus_ticket;
                 campus_message = e->campus_outcome == CampusOutcome::Success
@@ -1664,7 +1739,7 @@ class App {
         }
         if (e->kind == EventKind::Package) {
             const auto* account = account_catalog.find(e->account_id);
-            if (!account || account->secret_id != e->package_secret) return;
+            if (!account || account->portal_secret_id != e->package_secret) return;
             auto& cached = packages[e->account_id];
             if (e->package.state == PackageState::Loading && cached.first == e->package_secret)
                 cached.second.state = PackageState::Loading;
@@ -1744,8 +1819,8 @@ class App {
             if (account_service) {
                 const auto* service_account = account_catalog.find(campus_account_id);
                 if (!service_account) close_campus();
-                else if (service_account->secret_id != campus_secret) {
-                    campus_ticket.clear(); campus_secret = service_account->secret_id;
+                else if (service_account->portal_secret_id != campus_secret) {
+                    campus_ticket.clear(); campus_secret = service_account->portal_secret_id;
                     campus_busy = campus_confirming = false; ++campus_request;
                     campus_view = {}; campus_message = L"账号已更新，请刷新";
                 }
@@ -1959,27 +2034,43 @@ class App {
             InvalidateRect(input, nullptr, TRUE);
             break;
         }
+        case TestPortalPassword: {
+            if (portal_test_busy || pending_credential || remove_portal_password) return;
+            auto value = account_form_credential(PortalPasswordInput);
+            if (value->username.empty() || (value->password.empty() && !has_saved_portal_password())) {
+                text(Account, FormMessage, L"请填写校园网账号和统一门户密码");
+                SetFocus(ctrl(Account, value->username.empty() ? UserInput : PortalPasswordInput));
+                break;
+            }
+            portal_test_busy = true;
+            text(Account, FormMessage, L"");
+            backend->test_portal(form_account_id, std::move(value), ++portal_test_request);
+            update_page(Account);
+            break;
+        }
+        case RemovePortalPassword:
+            if (portal_test_busy || pending_credential || !has_saved_portal_password()) return;
+            remove_portal_password = !remove_portal_password;
+            SetWindowTextW(ctrl(Account, PortalPasswordInput), L"");
+            update_page(Account);
+            break;
         case SaveCredential: {
-            if (pending_credential)
+            if (pending_credential || portal_test_busy)
                 return;
-            auto value = std::make_shared<Credential>();
-            std::array<wchar_t, 257> user{}, password{};
-            GetWindowTextW(ctrl(Account, UserInput), user.data(), int(user.size()));
-            GetWindowTextW(ctrl(Account, PasswordInput), password.data(), int(password.size()));
-            value->username = user.data();
-            value->password = password.data();
-            SecureZeroMemory(password.data(), sizeof(password));
+            auto value = account_form_credential(PasswordInput);
             const auto *existing = account_catalog.find(form_account_id);
             if (value->username.empty() ||
                 ((!existing || existing->username != value->username) && value->password.empty())) {
-                text(Account, FormMessage, L"请输入账号和密码");
+                text(Account, FormMessage, L"请输入校园网账号和校园网密码");
                 SetFocus(ctrl(Account, value->username.empty() ? UserInput : PasswordInput));
                 break;
             }
             pending_credential = true;
             login_after_save = connect_after_save();
             text(Account, FormMessage, L"");
-            backend->save_account(form_account_id, std::move(value), login_after_save);
+            auto portal = account_form_credential(PortalPasswordInput);
+            if (portal->password.empty() && !remove_portal_password) portal.reset();
+            backend->save_account(form_account_id, std::move(value), login_after_save, std::move(portal));
             update_page(Account);
             break;
         }
@@ -2163,6 +2254,11 @@ class App {
             if (msg.message == WM_KEYDOWN && msg.wParam == VK_RETURN && current == Account &&
                 (msg.hwnd == ctrl(Account, UserInput) || msg.hwnd == ctrl(Account, PasswordInput))) {
                 command(SaveCredential);
+                continue;
+            }
+            if (msg.message == WM_KEYDOWN && msg.wParam == VK_RETURN && current == Account &&
+                msg.hwnd == ctrl(Account, PortalPasswordInput)) {
+                if (!(msg.lParam & (LPARAM(1) << 30))) command(TestPortalPassword);
                 continue;
             }
             if (!IsDialogMessageW(window, &msg)) {
@@ -2409,12 +2505,14 @@ void App::draw_item(const DRAWITEMSTRUCT &item) {
             if (id == StateText) {
                 font = settings.mini ? HeadingText : StatusText;
                 tint = state_color(status);
-            } else if (id == AccountValue || id == UserLabel || id == PasswordLabel || id == LogsMessage ||
+            } else if (id == AccountValue || id == UserLabel || id == PasswordLabel || id == PortalPasswordLabel || id == LogsMessage ||
                        id == AccountsEmpty || id == LogCount)
                 tint = Muted;
             else if (id == StateMessage || id == FormMessage || id == SettingsMessage)
                 tint = id == StateMessage && !portal_ticket.empty() ? Muted :
                        std::wstring_view(value) == L"已保存" ||
+                       (id == FormMessage && (std::wstring_view(value).starts_with(L"测试通过") ||
+                                              std::wstring_view(value).starts_with(L"登录通过"))) ||
                        (id == FormMessage && password_view && std::wstring_view(value).starts_with(L"校园网密码已修改")) ? Pine : Error;
             else if (id == HomeExpiry || id == PackageStatus) tint = Muted;
             else if (id == CampusStateValue) tint = campus_view.state == CampusState::Paused ? Warn : Pine;
@@ -2676,12 +2774,14 @@ void App::paint_page(Page &p) {
                 const auto form = account_form(int(w));
                 const float inset = settings.mini ? 0.f : 28.f, top = settings.mini ? 0.f : 100.f;
                 if (!settings.mini) {
-                    const Rect card{float(form.x), 76, float(form.w), float(form.h)};
+                    const Rect card{float(form.x), 76, float(form.w), 367};
                     renderer.fill(card, White, 9);
                     renderer.outline(card.inset(.5f), Line, 8.5f);
                 }
-                for (auto field : {std::pair{UserInput, 0.f}, std::pair{PasswordInput, 96.f}}) {
-                    const Rect well{float(form.x) + inset, top + 30 + field.second, float(form.w) - 2 * inset,
+                for (auto field : {std::pair{UserInput, 0.f}, std::pair{PasswordInput, 74.f},
+                                   std::pair{PortalPasswordInput, 148.f}}) {
+                    const Rect well{float(form.x) + inset, top + 30 + field.second,
+                                    float(form.w) - 2 * inset - (field.first == PortalPasswordInput ? 90.f : 0.f),
                                     44};
                     const bool focus = GetFocus() == ctrl(Account, field.first);
                     if (focus)
@@ -2726,7 +2826,7 @@ void App::paint_page(Page &p) {
 }
 HBRUSH App::control_color(HDC dc, HWND child) {
     const int id = GetDlgCtrlID(child);
-    const COLORREF bg = id == UserInput || id == PasswordInput || id == LogSearch || id == LogList ||
+    const COLORREF bg = id == UserInput || id == PasswordInput || id == PortalPasswordInput || id == LogSearch || id == LogList ||
                        id == OldPasswordInput || id == NewPasswordInput || id == ConfirmPasswordInput ? visual::White : paper;
     SetTextColor(dc, ink);
     SetBkColor(dc, bg);
@@ -2853,6 +2953,8 @@ LRESULT CALLBACK App::page_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             app.select_account();
         else if (LOWORD(w) == LogSearch && HIWORD(w) == EN_CHANGE)
             app.request_logs(true);
+        else if (HIWORD(w) == EN_CHANGE && (LOWORD(w) == UserInput || LOWORD(w) == PortalPasswordInput))
+            app.account_portal_input_changed();
         else if (HIWORD(w) == EN_CHANGE && (LOWORD(w) == OldPasswordInput || LOWORD(w) == NewPasswordInput || LOWORD(w) == ConfirmPasswordInput)) {
             if (app.password_view && !app.password_busy && !app.password_submitted) {
                 app.password_confirming = false; app.password_message.clear(); app.update_page(Account);
@@ -2893,9 +2995,11 @@ LRESULT CALLBACK App::page_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             const auto form = app.account_form(width);
             const int inset = app.settings.mini ? 0 : 28, top = app.settings.mini ? 0 : 100;
             POINT point{GET_X_LPARAM(l), GET_Y_LPARAM(l)};
-            for (auto field : {std::pair{UserInput, 0}, std::pair{PasswordInput, 96}}) {
+            for (auto field : {std::pair{UserInput, 0}, std::pair{PasswordInput, 74},
+                               std::pair{PortalPasswordInput, 148}}) {
                 RECT well{app.px(form.x + inset), app.px(top + 30 + field.second),
-                          app.px(form.x + form.w - inset), app.px(top + 74 + field.second)};
+                          app.px(form.x + form.w - inset - (field.first == PortalPasswordInput ? 90 : 0)),
+                          app.px(top + 74 + field.second)};
                 if (PtInRect(&well, point)) {
                     SetFocus(app.ctrl(Account, field.first));
                     return 0;

@@ -1,5 +1,5 @@
 // Explicit, single-account integration probe. Not registered with CTest.
-// Uses the app's own saved credential only in memory; prints availability,
+// Uses the app's own saved portal credential only in memory; prints availability,
 // never credentials, account identity, financial values or server responses.
 #include "desktop/package_query.hpp"
 #include "desktop/accounts.hpp"
@@ -64,7 +64,7 @@ int wmain(int argc, wchar_t** argv) {
         const auto catalog = store.load();
         const auto* account = catalog.first_account();
         scau::desktop::Credential credential;
-        if (!account || !store.read(*account, credential)) {
+        if (!account || !store.read_portal(*account, credential)) {
             std::cout << "{\"savedAccountAvailable\":false}\n";
             RoUninitialize(); return 0;
         }

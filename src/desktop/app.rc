@@ -4,8 +4,8 @@
 3 ICON "../../assets/connecting.ico"
 1 RT_MANIFEST "app.manifest"
 1 VERSIONINFO
- FILEVERSION 0,14,4,0
- PRODUCTVERSION 0,14,4,0
+ FILEVERSION 0,14,5,0
+ PRODUCTVERSION 0,14,5,0
  FILEFLAGSMASK 0x3fL
  FILEFLAGS 0
  FILEOS VOS_NT_WINDOWS32
@@ -16,11 +16,11 @@ BEGIN
   BLOCK "080404B0"
   BEGIN
    VALUE "FileDescription", "SCAU Link"
-   VALUE "FileVersion", "0.14.4"
+   VALUE "FileVersion", "0.14.5"
    VALUE "InternalName", "SCAU-Link"
    VALUE "OriginalFilename", "SCAU-Link.exe"
    VALUE "ProductName", "SCAU Link"
-   VALUE "ProductVersion", "0.14.4"
+   VALUE "ProductVersion", "0.14.5"
    VALUE "LegalCopyright", "GPL-3.0"
   END
  END

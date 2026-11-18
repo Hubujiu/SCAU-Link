@@ -9,8 +9,9 @@
 
 namespace scau::desktop {
 namespace {
+constexpr std::string_view no_portal_secret = "00000000000000000000000000000000";
 bool valid_id(std::string_view id) {
-    return id.size() == 32 && std::all_of(id.begin(), id.end(), [](char c) {
+    return id.size() == 32 && id != no_portal_secret && std::all_of(id.begin(), id.end(), [](char c) {
                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
            });
 }
@@ -20,7 +21,8 @@ void validate_catalog(const AccountCatalog &catalog) {
     std::set<std::string> ids, secrets;
     for (const auto &entry : catalog.entries)
         if (!valid_id(entry.id) || !valid_id(entry.secret_id) || !ids.insert(entry.id).second ||
-            !secrets.insert(entry.secret_id).second)
+            !secrets.insert(entry.secret_id).second || (!entry.portal_secret_id.empty() &&
+            (!valid_id(entry.portal_secret_id) || !secrets.insert(entry.portal_secret_id).second)))
             throw std::runtime_error("Invalid account catalog");
 }
 void erase_after_commit(const std::wstring &target) noexcept {
@@ -127,13 +129,17 @@ void AccountStore::commit(const AccountCatalog &catalog) const {
     std::ofstream file(temp, std::ios::binary | std::ios::trunc);
     if (!file)
         throw std::runtime_error("Cannot write account catalog");
-    file.write("SCAUAC02", 8);
+    const bool has_portal = std::any_of(catalog.entries.begin(), catalog.entries.end(),
+        [](const auto& entry) { return !entry.portal_secret_id.empty(); });
+    file.write(has_portal ? "SCAUAC03" : "SCAUAC02", 8);
     const auto count = static_cast<unsigned>(catalog.entries.size());
     for (unsigned n = 0; n < 4; ++n)
         file.put(char((count >> (8 * n)) & 255));
     for (const auto &entry : catalog.entries) {
         file.write(entry.id.data(), 32);
         file.write(entry.secret_id.data(), 32);
+        if (has_portal)
+            file.write(entry.portal_secret_id.empty() ? no_portal_secret.data() : entry.portal_secret_id.data(), 32);
     }
     file.flush();
     if (!file)
@@ -153,23 +159,28 @@ AccountCatalog AccountStore::load() {
         }
         return catalog;
     }
-    if (std::filesystem::file_size(path) > 44 + 64 * maximum_accounts)
+    if (std::filesystem::file_size(path) > 12 + 96 * maximum_accounts)
         throw std::runtime_error("Invalid account catalog size");
     std::ifstream file(path, std::ios::binary);
     std::string data((std::istreambuf_iterator<char>(file)), {});
     const bool legacy = data.starts_with("SCAUAC01");
+    const bool has_portal = data.starts_with("SCAUAC03");
     const std::size_t header = legacy ? 44 : 12;
-    if (data.size() < header || (!legacy && !data.starts_with("SCAUAC02")))
+    const std::size_t row_size = has_portal ? 96 : 64;
+    if (data.size() < header || (!legacy && !has_portal && !data.starts_with("SCAUAC02")))
         throw std::runtime_error("Invalid account catalog header");
     unsigned count = 0;
     for (unsigned n = 0; n < 4; ++n)
         count |= static_cast<unsigned char>(data[8 + n]) << (8 * n);
-    if (count > maximum_accounts || data.size() != header + 64 * count)
+    if (count > maximum_accounts || data.size() != header + row_size * count)
         throw std::runtime_error("Invalid account catalog length");
     AccountCatalog catalog;
-    for (unsigned n = 0; n < count; ++n)
-        catalog.entries.push_back(
-            {data.substr(header + 64 * n, 32), data.substr(header + 32 + 64 * n, 32), {}});
+    for (unsigned n = 0; n < count; ++n) {
+        const auto offset = header + row_size * n;
+        auto portal = has_portal ? data.substr(offset + 64, 32) : std::string{};
+        if (portal == no_portal_secret) portal.clear();
+        catalog.entries.push_back({data.substr(offset, 32), data.substr(offset + 32, 32), {}, std::move(portal)});
+    }
     validate_catalog(catalog);
     AccountCatalog available;
     for (auto &entry : catalog.entries) {
@@ -184,17 +195,22 @@ AccountCatalog AccountStore::load() {
 bool AccountStore::read(const AccountInfo &entry, Credential &value) const {
     return CredentialStore(target(entry.secret_id)).read(value);
 }
-std::string AccountStore::save(AccountCatalog &catalog, std::string_view id, const Credential &value) {
+bool AccountStore::read_portal(const AccountInfo &entry, Credential &value) const {
+    value.clear();
+    if (entry.portal_secret_id.empty() || !CredentialStore(target(entry.portal_secret_id)).read(value)) return false;
+    if (value.username == entry.username) return true;
+    value.clear();
+    return false;
+}
+std::string AccountStore::save(AccountCatalog &catalog, std::string_view id, const Credential &value,
+                               std::optional<std::wstring_view> portal_password) {
     validate_account_edit(catalog, id, value);
     const auto *previous = catalog.find(id);
-    Credential saved;
-    if (value.password.empty()) {
-        if (!previous || !read(*previous, saved))
-            throw std::runtime_error("Saved password not available");
-    } else
-        saved.password = value.password;
-    saved.username = value.username;
-    AccountInfo entry{previous ? previous->id : new_account_id(), new_account_id(), saved.username};
+    const bool same_user = previous && previous->username == value.username;
+    AccountInfo entry{previous ? previous->id : new_account_id(),
+                      value.password.empty() ? previous->secret_id : new_account_id(), value.username,
+                      same_user ? previous->portal_secret_id : std::string{}};
+    if (portal_password) entry.portal_secret_id = portal_password->empty() ? std::string{} : new_account_id();
     AccountCatalog next = catalog;
     if (previous)
         for (auto &old : next.entries)
@@ -202,17 +218,32 @@ std::string AccountStore::save(AccountCatalog &catalog, std::string_view id, con
                 old = entry;
     if (!previous)
         next.entries.push_back(entry);
-    CredentialStore(target(entry.secret_id)).write(saved);
-    const auto old_target = previous ? target(previous->secret_id) : std::wstring{};
+    const auto new_network = value.password.empty() ? std::wstring{} : target(entry.secret_id);
+    const auto new_portal = portal_password && !portal_password->empty() ? target(entry.portal_secret_id) : std::wstring{};
+    const auto old_network = previous && previous->secret_id != entry.secret_id ? target(previous->secret_id) : std::wstring{};
+    const auto old_portal = previous && !previous->portal_secret_id.empty() && previous->portal_secret_id != entry.portal_secret_id
+        ? target(previous->portal_secret_id) : std::wstring{};
     try {
+        if (new_network.empty()) {
+            Credential saved;
+            if (!read(*previous, saved) || saved.username != value.username)
+                throw std::runtime_error("Saved password not available");
+        } else CredentialStore(new_network).write(value);
+        if (!new_portal.empty()) {
+            Credential saved_portal;
+            saved_portal.username = value.username;
+            saved_portal.password = *portal_password;
+            CredentialStore(new_portal).write(saved_portal);
+        }
         commit(next);
     } catch (...) {
-        erase_after_commit(target(entry.secret_id));
+        if (!new_network.empty()) erase_after_commit(new_network);
+        if (!new_portal.empty()) erase_after_commit(new_portal);
         throw;
     }
     catalog = std::move(next);
-    if (!old_target.empty())
-        erase_after_commit(old_target);
+    if (!old_network.empty()) erase_after_commit(old_network);
+    if (!old_portal.empty()) erase_after_commit(old_portal);
     return entry.id;
 }
 void AccountStore::pin(AccountCatalog &catalog, std::string_view id) {
@@ -232,11 +263,13 @@ void AccountStore::remove(AccountCatalog &catalog, std::string_view id) {
     if (!previous)
         throw std::runtime_error("Account not found");
     const auto old_target = target(previous->secret_id);
+    const auto old_portal = previous->portal_secret_id.empty() ? std::wstring{} : target(previous->portal_secret_id);
     auto next = catalog;
     remove_account_entry(next, id);
     commit(next);
     catalog = std::move(next);
     erase_after_commit(old_target);
+    if (!old_portal.empty()) erase_after_commit(old_portal);
 }
 AccountRotation::AccountRotation(const AccountCatalog &catalog) {
     for (const auto &entry : catalog.entries)

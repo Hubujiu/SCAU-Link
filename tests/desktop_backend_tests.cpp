@@ -83,6 +83,40 @@ int wmain() {
         wc.lpszClassName = L"ScauLink.BackendFixture";
         RegisterClassW(&wc);
         {
+            BackendOptions options; options.demo_first_run = true;
+            Fixture f(options);
+            auto network = std::make_shared<Credential>();
+            network->username = L"fixture-network-user"; network->password = L"demo-only";
+            f.backend->save_account({}, network);
+            f.wait([&] { return f.events.back().kind == EventKind::AccountsChanged; });
+            const auto row = *f.events.back().accounts.first_account();
+            f.backend->request_packages(row.id);
+            f.backend->prepare_campus(row.id, 1);
+            f.wait([&] { return f.events.back().kind == EventKind::Campus; });
+            require(row.portal_secret_id.empty() && f.events.back().campus.error == CampusError::MissingPortalCredential &&
+                        f.events.back().campus_ticket.empty() &&
+                        std::none_of(f.events.begin(), f.events.end(), [](const auto& e) { return e.kind == EventKind::Package; }),
+                    "An unconfigured portal credential must suppress package requests and campus operations");
+            const auto probe = [&](std::wstring_view password, unsigned request) {
+                auto input = std::make_shared<Credential>(); input->username = row.username; input->password = password;
+                f.backend->test_portal(row.id, input, request);
+                f.wait([&] { return f.events.back().kind == EventKind::PortalTest && f.events.back().portal_test_request == request; });
+                return f.events.back().success;
+            };
+            require(!probe(L"", 1) && !probe(L"demo-only", 2) && probe(L"demo-portal", 3) && f.attempts().empty(),
+                    "Testing an unsaved portal password must use its own input and never start network login");
+            auto retained = std::make_shared<Credential>(); retained->username = row.username;
+            auto portal = std::make_shared<Credential>(); portal->password = L"demo-portal";
+            f.backend->save_account(row.id, retained, false, portal);
+            f.wait([&] { return f.events.back().kind == EventKind::AccountsChanged; });
+            const auto saved = *f.events.back().accounts.find(row.id);
+            require(saved.secret_id == row.secret_id && !saved.portal_secret_id.empty() && probe(L"", 4),
+                    "The test button can use the independently saved portal password");
+            f.backend->connect();
+            f.wait([&] { return f.state(Status::Online); });
+            require(f.attempts() == std::vector<std::string>{row.id}, "Network login uses the same account after a portal-only edit");
+        }
+        {
             BackendOptions options;options.demo_packages=true;options.demo_network_only=true;
             Fixture f(options);f.backend->connect();f.wait([&]{return f.state(Status::Online);});
             const auto online=std::find_if(f.events.begin(),f.events.end(),[](const auto& e){return e.kind==EventKind::State && e.status==Status::Online;});
@@ -279,7 +313,7 @@ int wmain() {
             f.wait([&] { return result(1) != nullptr; });
             const auto ticket = result(1)->campus_ticket;
             require(!ticket.empty() && result(1)->campus.state == CampusState::Normal &&
-                    result(1)->campus.online_devices == 2 && result(1)->package_secret == account.secret_id &&
+                    result(1)->campus.online_devices == 2 && result(1)->package_secret == account.portal_secret_id &&
                     f.attempts().empty() && !f.backend->running(),
                     "Campus read-only preparation carries exact account/version and cannot start authentication");
             f.backend->change_campus(account.id, ticket, CampusAction::Pause, 2);
@@ -325,7 +359,7 @@ int wmain() {
             f.backend->request_packages(account.id);
             f.wait([&] { return f.events.back().kind == EventKind::Package &&
                                f.events.back().package.state == PackageState::Ready; });
-            require(f.events.back().account_id == account.id && f.events.back().package_secret == account.secret_id &&
+            require(f.events.back().account_id == account.id && f.events.back().package_secret == account.portal_secret_id &&
                         f.events.back().package.balance == 13650 && f.events.back().package.monthly_fee == 3000,
                     "Package result must carry its exact account/credential version");
             const auto before = f.events.size();
@@ -333,16 +367,17 @@ int wmain() {
             const auto deadline = GetTickCount64() + 60;
             while (GetTickCount64() < deadline) { f.pump(); Sleep(2); }
             require(f.events.size() == before, "Repeated visible-page requests must coalesce within cache TTL");
-            auto changed = std::make_shared<Credential>();
-            changed->username = account.username; changed->password = L"changed-demo-only";
-            f.backend->save_account(account.id, changed);
+            auto changed = std::make_shared<Credential>(); changed->username = account.username;
+            auto portal = std::make_shared<Credential>(); portal->password = L"updated-demo-portal";
+            f.backend->save_account(account.id, changed, false, portal);
             f.wait([&] { return f.events.back().kind == EventKind::AccountsChanged; });
             const auto updated = *f.events.back().accounts.find(account.id);
-            require(updated.secret_id != account.secret_id, "Credential update must get a new query cache version");
+            require(updated.secret_id == account.secret_id && updated.portal_secret_id != account.portal_secret_id,
+                    "A portal password update gets a new query cache version without replacing the network credential");
             f.backend->request_packages(account.id);
             f.wait([&] { return f.events.back().kind == EventKind::Package &&
                                f.events.back().package.state == PackageState::Ready; });
-            require(f.events.back().package_secret == updated.secret_id, "Credential change must invalidate package TTL");
+            require(f.events.back().package_secret == updated.portal_secret_id, "Portal credential change must invalidate package TTL");
         }
         {
             BackendOptions options;

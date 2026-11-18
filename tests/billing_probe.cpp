@@ -31,7 +31,7 @@ int wmain(int argc, wchar_t** argv) {
     if (FAILED(RoInitialize(RO_INIT_MULTITHREADED))) return 3;
     try {
         AccountStore store(data_directory()); const auto catalog = store.load(); Credential credential;
-        if (!catalog.first_account() || !store.read(*catalog.first_account(), credential)) return 4;
+        if (!catalog.first_account() || !store.read_portal(*catalog.first_account(), credential)) return 4;
         std::array<unsigned char, 6> mac{};
         const auto profile = locate_profile(data_directory(), executable_path());
         if (!profile.empty()) mac = scau::load_profile(profile).local;

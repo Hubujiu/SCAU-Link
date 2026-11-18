@@ -84,7 +84,7 @@ int wmain(int argc, wchar_t** argv) {
         std::string verify;
         if (!std::getline(std::cin, verify) || verify.empty() || verify.size() > 12 ||
             verify.find_first_not_of("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != verify.npos) return 4;
-        if (!store.read(*catalog.first_account(), credential)) return 3;
+        if (!store.read_portal(*catalog.first_account(), credential)) return 3;
         auto cipher = encrypted(credential, input(public_page.response.body, "publicKey")); Wipe cipher_wipe{cipher};
         std::string username; Wipe username_wipe{username};
         for (auto ch : credential.username) { if (ch < 1 || ch > 127) throw std::runtime_error("Research username bound"); username += char(ch); }

@@ -18,7 +18,7 @@ namespace scau::desktop {
 inline constexpr UINT backend_message = WM_APP + 20;
 enum class Status { Loading, Offline, Connecting, Online, Recovering, Waiting, Stopping, Error };
 enum class EventKind { Initialized, State, AccountsChanged, SettingsSaved, Logs, ConnectionReady, Package, Campus,
-                       PortalDetected, PasswordChanged, ModeSelected };
+                       PortalDetected, PasswordChanged, ModeSelected, PortalTest };
 struct PasswordEdit {
     std::wstring old_password, new_password, confirmation;
     void clear() noexcept {
@@ -55,6 +55,7 @@ struct Event {
     PasswordChangeResult password_change;
     bool password_local_saved = false;
     unsigned password_request = 0;
+    unsigned portal_test_request = 0;
 };
 struct BackendOptions {
     // Explicit integration seam: isolate the catalog/cache/logs while exercising
@@ -87,12 +88,13 @@ class Backend {
     std::optional<PendingPortal> pending_portal_;
     unsigned password_request_ = 0;
     std::map<std::string, std::shared_ptr<Credential>> demo_values_;
+    std::map<std::string, std::shared_ptr<Credential>> demo_portal_values_;
     std::mutex queue_mutex_, log_mutex_;
     std::condition_variable queue_cv_;
     std::deque<std::function<void()>> queue_;
     bool quitting_ = false;
     std::thread io_thread_, auth_thread_;
-    enum class QueryKind { Package, CampusPrepare, CampusApply };
+    enum class QueryKind { Package, CampusPrepare, CampusApply, PortalTest };
     struct PackageTask {
         AccountInfo account; std::array<unsigned char, 6> mac{};
         QueryKind kind = QueryKind::Package;
@@ -101,6 +103,7 @@ class Backend {
         unsigned request = 0, epoch = 0;
         unsigned connection_epoch = 0;
         unsigned interface_index = 0;
+        std::shared_ptr<Credential> portal_input;
     };
     std::thread package_thread_;
     std::mutex package_mutex_;
@@ -117,6 +120,9 @@ class Backend {
     unsigned campus_snapshot_epoch_ = 0;
     std::map<std::string, CampusState> campus_demo_states_;
     void package_work();
+    void package_interface(PackageTask& task) const;
+    void queue_interactive_query(PackageTask task);
+    void portal_test_work(const PackageTask& task);
     void campus_work(const PackageTask& task);
     void request_campus(std::string id, unsigned request, bool apply, std::string ticket, CampusAction action);
     std::atomic<bool> interrupted_ = false, running_ = false;
@@ -137,7 +143,9 @@ class Backend {
     void connect(bool startup = false);
     void disconnect();
     bool running() const noexcept { return running_.load(); }
-    void save_account(std::string id, std::shared_ptr<Credential> value, bool connect_after = false);
+    void save_account(std::string id, std::shared_ptr<Credential> value, bool connect_after = false,
+                      std::shared_ptr<Credential> portal_edit = {});
+    void test_portal(std::string id, std::shared_ptr<Credential> value, unsigned request);
     void pin_account(std::string id);
     void reorder_accounts(std::vector<std::string> ids);
     void remove_account(std::string id);

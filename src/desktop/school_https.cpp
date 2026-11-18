@@ -1,6 +1,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "school_https.hpp"
+#include <array>
 #include "interface_dns.hpp"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -115,7 +116,7 @@ std::optional<std::wstring> decode_school_response(std::string_view bytes, std::
 HttpsResult school_tls_exchange(std::uintptr_t raw_socket, std::string_view method, std::string_view path,
                                 std::string_view body, std::uint64_t deadline,
                                 TlsDiagnostics* diagnostics, const std::atomic_bool* cancel,
-                                std::string_view session_cookie) {
+                                std::string_view session_cookie, bool require_school_certificate) {
     TlsDiagnostics local;
     auto& info = diagnostics ? *diagnostics : local;
     HttpsResult result;
@@ -148,6 +149,20 @@ HttpsResult school_tls_exchange(std::uintptr_t raw_socket, std::string_view meth
         }
     }
     info.connected = true;
+    if (require_school_certificate) {
+        // SHA-256 of the leaf served by the school's fixed Ruijie origin.
+        constexpr std::array<unsigned char, 32> school_certificate{
+            0xa0, 0x04, 0xda, 0xd6, 0xce, 0x68, 0xce, 0xc7, 0x8b, 0x86, 0x8c, 0x3c, 0x00, 0x58, 0xa2, 0xb4,
+            0xcb, 0x38, 0xb8, 0xd8, 0x25, 0x36, 0x80, 0xae, 0x04, 0x3f, 0x5f, 0xfd, 0xb7, 0xff, 0x61, 0xff};
+        std::array<unsigned char, 32> fingerprint{};
+        unsigned length{};
+        const auto* peer = SSL_get0_peer_certificate(ssl.get());
+        if (!peer || X509_digest(peer, EVP_sha256(), fingerprint.data(), &length) != 1 ||
+            length != fingerprint.size() || fingerprint != school_certificate) {
+            result.state = TransportState::CertificateError;
+            return result;
+        }
+    }
     std::string request;
     request.reserve(path.size() + body.size() + session_cookie.size() + 512);
     request = std::string(method) + " " + std::string(path) +
@@ -286,7 +301,7 @@ HttpsResult school_https_request_on_interface(unsigned index, std::string_view m
         // Match the original client's 30-second receive allowance. The
         // connection/DNS budget stays short; cancellation is polled throughout.
         return school_tls_exchange(candidate.value, method, path, body, GetTickCount64() + 30000, &info, cancel,
-                                   session_cookie);
+                                   session_cookie, true);
     }
     if (!info.socket_error) info.socket_error = stopped(cancel) ? ERROR_CANCELLED : WSAETIMEDOUT;
     return failed;

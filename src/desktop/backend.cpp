@@ -52,21 +52,25 @@ Backend::~Backend() {
     if (auth_thread_.joinable())
         auth_thread_.join();
 }
-void Backend::request_packages(std::string id) {
-    queue([this, id = std::move(id)] {
-        if (package_quit_) return;
-        std::array<unsigned char, 6> mac{};
-        unsigned interface_index = 0;
+void Backend::package_interface(PackageTask& task) const {
+    try {
         if (!options_.demo && !profile_.empty()) {
-            try { mac = load_profile(profile_).local; } catch (const std::exception&) {}
+            try { task.mac = load_profile(profile_).local; } catch (const std::exception&) {}
         }
         if (!options_.demo && (running_ ? session_mode_.load() : mode_) != ConnectionMode::Wired) {
             const auto network = current_wireless_network();
-            if (network.found) {mac = network.mac; interface_index = network.index;}
+            if (network.found) { task.mac = network.mac; task.interface_index = network.index; }
         }
+    } catch (const std::exception&) {}
+}
+void Backend::request_packages(std::string id) {
+    queue([this, id = std::move(id)] {
+        if (package_quit_) return;
+        PackageTask base;
+        package_interface(base);
         for (const auto& entry : catalog_.entries) {
-            if (!id.empty() && entry.id != id) continue;
-            const auto key = entry.id + ":" + entry.secret_id;
+            if ((!id.empty() && entry.id != id) || entry.portal_secret_id.empty()) continue;
+            const auto key = entry.id + ":" + entry.portal_secret_id;
             {
                 std::lock_guard lock(package_mutex_);
                 const auto now = GetTickCount64();
@@ -74,16 +78,84 @@ void Backend::request_packages(std::string id) {
                 if (auto due = package_due_.find(key); due != package_due_.end() && now < due->second) continue;
                 package_due_[key] = now + 10000; // In-flight deduplication; failures use a short retry below.
                 package_inflight_.insert(key);
-                Event e; e.kind = EventKind::Package; e.account_id = entry.id; e.package_secret = entry.secret_id;
+                Event e; e.kind = EventKind::Package; e.account_id = entry.id; e.package_secret = entry.portal_secret_id;
                 e.package.state = PackageState::Loading;
                 post(std::move(e));
-                PackageTask task;task.account=entry;task.mac=mac;task.connection_epoch=package_connection_epoch_.load();
-                task.interface_index=interface_index;
+                auto task = base; task.account = entry; task.connection_epoch = package_connection_epoch_.load();
                 package_queue_.push_back(std::move(task));
             }
             package_cv_.notify_one();
         }
     });
+}
+void Backend::queue_interactive_query(PackageTask task) {
+    {
+        std::lock_guard lock(package_mutex_);
+        const auto background = std::find_if(package_queue_.begin(), package_queue_.end(),
+            [](const auto& queued) { return queued.kind == QueryKind::Package; });
+        package_queue_.insert(background, std::move(task));
+    }
+    package_cv_.notify_one();
+}
+void Backend::test_portal(std::string id, std::shared_ptr<Credential> value, unsigned request) {
+    queue([this, id = std::move(id), value = std::move(value), request] {
+        if (package_quit_) return;
+        if (value->password.empty()) {
+            bool available = false;
+            try {
+                const auto* saved = catalog_.find(id);
+                if (saved && saved->username == value->username && !saved->portal_secret_id.empty()) {
+                    if (options_.demo) {
+                        value->password = demo_portal_values_.at(id)->password;
+                        available = true;
+                    } else available = accounts_ && accounts_->read_portal(*saved, *value);
+                }
+            } catch (const std::exception&) {}
+            if (!available) {
+                Event e; e.kind = EventKind::PortalTest; e.portal_test_request = request; e.success = false;
+                e.message = L"请填写统一门户密码后再测试";
+                post(std::move(e));
+                return;
+            }
+        }
+        PackageTask task; task.kind = QueryKind::PortalTest; task.request = request; task.portal_input = value;
+        package_interface(task);
+        queue_interactive_query(std::move(task));
+    });
+}
+void Backend::portal_test_work(const PackageTask& task) {
+    Event e; e.kind = EventKind::PortalTest; e.portal_test_request = task.request; e.success = false;
+    try {
+        PackageDiagnostics diag;
+        PackageInfo info;
+        if (options_.demo) {
+            if (task.portal_input->password == L"demo-portal") {
+                info.state = PackageState::Ready;
+                info.balance = 0; info.online_devices = 0;
+            } else {
+                info.state = PackageState::AuthError;
+                info.query_rejection_code = 0;
+            }
+        } else info = query_package(*task.portal_input, task.mac, &diag, nullptr, &package_quit_, {}, task.interface_index);
+        switch (info.state) {
+        case PackageState::Ready: case PackageState::Partial:
+            e.success = true;
+            e.message = info.balance && info.online_devices ? L"测试通过，已查到余额和在线设备数"
+                : L"登录通过，学校只返回了部分查询数据";
+            break;
+        case PackageState::AuthError:
+            e.message = info.query_rejection_code && *info.query_rejection_code == 0
+                ? L"统一门户账号或密码未通过" : L"学校拒绝自助查询";
+            break;
+        case PackageState::NetworkError: e.message = L"无法连接学校自助服务，请检查校园网"; break;
+        case PackageState::CertificateError: e.message = L"学校自助服务证书校验失败"; break;
+        case PackageState::TlsError: e.message = L"学校自助服务 TLS 连接失败"; break;
+        default: e.message = diag.stage == PackageStage::Encoding ? L"自助接口不支持此账号或密码格式"
+            : L"学校未返回可识别的查询数据，暂无法确认";
+        }
+    } catch (...) { e.message = L"自助服务测试失败，请重试"; }
+    task.portal_input->clear();
+    if (!package_quit_) post(std::move(e));
 }
 void Backend::prepare_campus(std::string id, unsigned request) {
     request_campus(std::move(id), request, false, {}, CampusAction::Pause);
@@ -102,30 +174,24 @@ void Backend::request_campus(std::string id, unsigned request, bool apply, std::
         if (!options_.demo && !profile_.empty()) {
             try { task.mac = load_profile(profile_).local; } catch (...) {}
         }
-        {
-            std::lock_guard lock(package_mutex_);
-            // Explicit operations precede background billing work, but retain
-            // their own order so another view cannot overtake a confirmed POST.
-            const auto background = std::find_if(package_queue_.begin(), package_queue_.end(),
-                [](const auto& queued) { return queued.kind == QueryKind::Package; });
-            package_queue_.insert(background, std::move(task));
-        }
-        package_cv_.notify_one();
+        queue_interactive_query(std::move(task));
     });
 }
 void Backend::campus_work(const PackageTask& task) {
     Event e; e.kind = EventKind::Campus; e.account_id = task.account.id;
-    e.package_secret = task.account.secret_id; e.campus_request = task.request;
+    e.package_secret = task.account.portal_secret_id; e.campus_request = task.request;
     e.campus_change = task.kind == QueryKind::CampusApply; e.campus_action = task.action;
     const auto current = [&] { return !package_quit_ && campus_epoch_.load() == task.epoch; };
-    const auto same = campus_account_ == task.account.id && campus_secret_ == task.account.secret_id &&
+    const auto same = campus_account_ == task.account.id && campus_secret_ == task.account.portal_secret_id &&
                       campus_snapshot_epoch_ == task.epoch;
     try {
         if (!current() || (e.campus_change && (!same || task.ticket.empty() || task.ticket != campus_ticket_))) {
             e.campus_outcome = CampusOutcome::Expired; e.campus.error = CampusError::Stale;
+        } else if (task.account.portal_secret_id.empty()) {
+            e.campus.error = CampusError::MissingPortalCredential;
         } else if (options_.demo) {
             if (!e.campus_change) {
-                campus_account_ = task.account.id; campus_secret_ = task.account.secret_id;
+                campus_account_ = task.account.id; campus_secret_ = task.account.portal_secret_id;
                 campus_snapshot_epoch_ = task.epoch;
             }
             auto& state = campus_demo_states_[task.account.id];
@@ -146,16 +212,17 @@ void Backend::campus_work(const PackageTask& task) {
             if (same && campus_session_) e.campus = campus_session_->refresh(&package_quit_);
             if (!same || !campus_session_ || e.campus.error == CampusError::Auth) {
                 campus_session_ = std::make_unique<CampusSession>();
-                campus_account_ = task.account.id; campus_secret_ = task.account.secret_id;
+                campus_account_ = task.account.id; campus_secret_ = task.account.portal_secret_id;
                 campus_snapshot_epoch_ = task.epoch;
                 Credential credential;
-                if (!accounts_ || !accounts_->read(task.account, credential)) throw std::runtime_error("Missing campus credential");
-                e.campus = campus_session_->prepare(credential, task.mac, &package_quit_);
+                if (accounts_ && accounts_->read_portal(task.account, credential))
+                    e.campus = campus_session_->prepare(credential, task.mac, &package_quit_);
+                else e.campus.error = CampusError::MissingPortalCredential;
             }
         }
     } catch (...) { e.campus.error = CampusError::Data; }
     campus_ticket_.clear();
-    if (current() && campus_account_ == task.account.id && campus_secret_ == task.account.secret_id &&
+    if (current() && campus_account_ == task.account.id && campus_secret_ == task.account.portal_secret_id &&
         campus_snapshot_epoch_ == task.epoch && e.campus.error == CampusError::None &&
         (options_.demo || (campus_session_ && campus_session_->prepared())) &&
         (e.campus.can_pause || e.campus.can_resume) && e.campus_outcome != CampusOutcome::Unknown &&
@@ -179,11 +246,15 @@ void Backend::package_work() {
             if (package_quit_) break;
             task = std::move(package_queue_.front()); package_queue_.pop_front();
         }
+        if (task.kind == QueryKind::PortalTest) {
+            portal_test_work(task);
+            continue;
+        }
         if (task.kind != QueryKind::Package) {
             campus_work(task);
             continue;
         }
-        Event e; e.kind = EventKind::Package; e.account_id = task.account.id; e.package_secret = task.account.secret_id;
+        Event e; e.kind = EventKind::Package; e.account_id = task.account.id; e.package_secret = task.account.portal_secret_id;
         e.package.state = PackageState::Unsupported;
         const auto epoch = package_connection_epoch_.load();
         if (epoch != cooldown_epoch) {cooldown.reset();cooldown_epoch=epoch;}
@@ -215,7 +286,7 @@ void Backend::package_work() {
                 e.package.state = *cached;
             } else {
                 Credential secret;
-                if (accounts_ && accounts_->read(task.account, secret)) {
+                if (accounts_ && accounts_->read_portal(task.account, secret)) {
                     PackageDiagnostics diagnostic;
                     e.package = query_package(secret, task.mac, &diagnostic, nullptr, &package_quit_, {}, task.interface_index);
                     cooldown.record(e.package.state, GetTickCount64());
@@ -237,13 +308,16 @@ void Backend::package_work() {
                     log("package_query_detail_session", diagnostic.detail_session_available);
                     log("package_query_balance_available", e.package.balance.has_value());
                     log("package_query_fee_available", package_fee(e.package).has_value());
-                } else log("package_query_credential_unavailable");
+                } else {
+                    e.package.state = PackageState::MissingPortalCredential;
+                    log("package_query_credential_unavailable");
+                }
             }
         } catch (...) { e.package.state = PackageState::Unsupported; }
         {
             std::lock_guard lock(package_mutex_);
             const auto state = e.package.state;
-            const auto key=task.account.id+":"+task.account.secret_id;
+            const auto key=task.account.id+":"+task.account.portal_secret_id;
             const auto connection_epoch=package_connection_epoch_.load();
             if(!package_quit_ && task.connection_epoch!=connection_epoch) {
                 // A pre-login query can finish after the connection/recovery
@@ -268,7 +342,8 @@ void Backend::package_work() {
             package_due_[key] = GetTickCount64() +
                 (state == PackageState::Ready || state == PackageState::Partial ?
                     (incomplete && attempts.second<=3?30000:300000) :
-                 state == PackageState::AuthError ? 60000 : state == PackageState::NetworkError ? 5000 : 15000);
+                 state == PackageState::AuthError || state == PackageState::MissingPortalCredential ? 300000 :
+                 state == PackageState::NetworkError ? 5000 : 15000);
             }
         }
         log("package_query_state",int(e.package.state));
@@ -345,7 +420,10 @@ void Backend::initialize() {
                 auto secret = std::make_shared<Credential>();
                 secret->username = n == 1 ? L"20260088" : n == 2 ? L"20260089" : L"20260090";
                 secret->password = L"demo-only";
-                catalog_.entries.push_back({id, std::string(32, char('a' + n - 1)), secret->username});
+                catalog_.entries.push_back({id, std::string(32, char('a' + n - 1)), secret->username, new_account_id()});
+                auto portal = std::make_shared<Credential>();
+                portal->username = secret->username; portal->password = L"demo-portal";
+                demo_portal_values_[id] = std::move(portal);
                 demo_values_[id] = std::move(secret);
             }
             e.settings.mini = options_.mini;
@@ -711,7 +789,7 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                         if (result == 0) {
                             authenticated = true;
                             ++package_connection_epoch_;
-                            {std::lock_guard lock(package_mutex_);package_due_.erase(id+":"+found->info.secret_id);}
+                            {std::lock_guard lock(package_mutex_);package_due_.erase(id+":"+found->info.portal_secret_id);}
                             Event online;
                             online.status = Status::Online;
                             online.username = found->info.username;
@@ -834,12 +912,12 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
                                                           ++package_connection_epoch_;
                                                           rotation.authenticated();
                                                           { std::lock_guard lock(package_mutex_);
-                                                            package_due_.erase(id+":"+found->info.secret_id); }
+                                                            package_due_.erase(id+":"+found->info.portal_secret_id); }
                                                           e.status = Status::Online;
                                                       } else if (name == "worker_network_available") {
                                                           authenticated=true;
                                                           ++package_connection_epoch_;
-                                                          {std::lock_guard lock(package_mutex_);package_due_.erase(id+":"+found->info.secret_id);}
+                                                          {std::lock_guard lock(package_mutex_);package_due_.erase(id+":"+found->info.portal_secret_id);}
                                                           e.status=Status::Online;e.network_only=true;
                                                           e.username.clear();e.account_id.clear();
                                                       } else if (name == "worker_unauthenticated" ||
@@ -917,10 +995,12 @@ void Backend::start_auth(unsigned token, std::vector<ConnectionMode> startup_mod
         throw;
     }
 }
-void Backend::save_account(std::string id, std::shared_ptr<Credential> value, bool connect_after) {
+void Backend::save_account(std::string id, std::shared_ptr<Credential> value, bool connect_after,
+                           std::shared_ptr<Credential> portal_edit) {
     ++campus_epoch_;
     const auto token = generation_.load();
-    queue([this, id = std::move(id), value = std::move(value), connect_after, token] {
+    queue([this, id = std::move(id), value = std::move(value), connect_after, token,
+           portal_edit = std::move(portal_edit)] {
         Event e;
         e.kind = EventKind::AccountsChanged;
         e.refresh_form = true;
@@ -931,8 +1011,11 @@ void Backend::save_account(std::string id, std::shared_ptr<Credential> value, bo
                 saved->username = value->username;
                 saved->password = value->password.empty() ? demo_values_.at(id)->password : value->password;
                 const auto *previous = catalog_.find(id);
-                AccountInfo entry{previous ? previous->id : new_account_id(), new_account_id(),
-                                  saved->username};
+                const bool same_user = previous && previous->username == saved->username;
+                AccountInfo entry{previous ? previous->id : new_account_id(),
+                                  value->password.empty() ? previous->secret_id : new_account_id(), saved->username,
+                                  same_user ? previous->portal_secret_id : std::string{}};
+                if (portal_edit) entry.portal_secret_id = portal_edit->password.empty() ? std::string{} : new_account_id();
                 if (previous) {
                     for (auto &row : catalog_.entries)
                         if (row.id == id)
@@ -940,9 +1023,16 @@ void Backend::save_account(std::string id, std::shared_ptr<Credential> value, bo
                 } else
                     catalog_.entries.push_back(entry);
                 demo_values_[entry.id] = std::move(saved);
+                if (entry.portal_secret_id.empty()) demo_portal_values_.erase(entry.id);
+                else if (portal_edit) {
+                    auto portal = std::make_shared<Credential>();
+                    portal->username = entry.username; portal->password = portal_edit->password;
+                    demo_portal_values_[entry.id] = std::move(portal);
+                }
                 e.account_id = entry.id;
             } else
-                e.account_id = accounts_->save(catalog_, id, *value);
+                e.account_id = accounts_->save(catalog_, id, *value,
+                    portal_edit ? std::optional<std::wstring_view>{portal_edit->password} : std::nullopt);
             e.message = L"已保存";
             log("credentials_saved");
         } catch (const std::exception &) {
@@ -951,6 +1041,7 @@ void Backend::save_account(std::string id, std::shared_ptr<Credential> value, bo
             e.account_id = id;
         }
         value->clear();
+        if (portal_edit) portal_edit->clear();
         const bool success = e.success;
         account_summary(e);
         post(std::move(e));
@@ -1004,6 +1095,7 @@ void Backend::remove_account(std::string id) {
             if (options_.demo) {
                 remove_account_entry(catalog_, id);
                 demo_values_.erase(id);
+                demo_portal_values_.erase(id);
             } else
                 accounts_->remove(catalog_, id);
             e.account_id = catalog_.entries.empty() ? std::string{} : catalog_.entries.front().id;

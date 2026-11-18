@@ -9,7 +9,8 @@
 #include <optional>
 
 namespace scau::desktop {
-enum class PackageState { Idle, Loading, Ready, Partial, CertificateError, NetworkError, AuthError, Unsupported, TlsError };
+enum class PackageState { Idle, Loading, Ready, Partial, CertificateError, NetworkError, AuthError, Unsupported, TlsError,
+                          MissingPortalCredential };
 enum class PackageSummaryResult {
     NotInspected, Empty, DecodeError, Html, InvalidJson, MissingEnvelope,
     InvalidEnvelope, MissingItems, InvalidItems, EmptyItems, TooManyItems,

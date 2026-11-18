@@ -141,7 +141,9 @@ std::wstring campus_error_text(CampusError error) {
     switch (error) {
     case CampusError::Network: return L"网络异常";
     case CampusError::Tls: return L"TLS 连接失败";
-    case CampusError::Auth: return L"查询登录未通过";
+    case CampusError::Auth: return L"统一门户账号或密码未通过";
+    case CampusError::MissingPortalCredential: return L"请在账号中填写统一门户密码";
+    case CampusError::Certificate: return L"学校自助服务证书校验失败";
     case CampusError::Data: return L"查询失败";
     case CampusError::Stale: return L"状态已变化，请刷新";
     case CampusError::Permission: return L"当前账号不支持此操作";
@@ -166,6 +168,7 @@ std::wstring CampusSession::read(std::string_view method, std::string_view path,
     auto reply = sender_(method, path, body, cookie_, cancel);
     Wipe body_wipe{reply.response.body}, cookie_wipe{reply.response.session_cookie};
     if (reply.state == detail::TransportState::TlsError) throw Failure{CampusError::Tls};
+    if (reply.state == detail::TransportState::CertificateError) throw Failure{CampusError::Certificate};
     if (reply.state == detail::TransportState::NetworkError) throw Failure{CampusError::Network};
     if (reply.state != detail::TransportState::Complete) throw Failure{CampusError::Data};
     if (reply.response.status == 401 || reply.response.status == 403 || reply.response.status == 302) throw Failure{CampusError::Auth};
@@ -228,7 +231,9 @@ CampusView CampusSession::prepare(const Credential& credential, const std::array
         stage_ = 1;
         auto path = account_query_path(credential, mac); Wipe path_wipe{path};
         auto summary = read("GET", path, {}, cancel); Wipe summary_wipe{summary};
-        view_.online_devices = parse_package_response(summary).online_devices;
+        const auto info = parse_package_response(summary);
+        if (info.state == PackageState::AuthError) throw Failure{CampusError::Auth};
+        view_.online_devices = info.online_devices;
         auto route = package_detail_login_path(summary); Wipe route_wipe{route};
         if (route.empty()) throw Failure{CampusError::Data};
         // The original client's information-query session is separate from

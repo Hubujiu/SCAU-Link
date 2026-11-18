@@ -68,7 +68,8 @@ int wmain(int argc, wchar_t** argv) {
         std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> key(PEM_read_bio_PrivateKey(key_bio.get(), nullptr, nullptr, nullptr), EVP_PKEY_free);
         require(cert && key && SSL_CTX_use_certificate(context.get(), cert.get()) == 1 &&
                     SSL_CTX_use_PrivateKey(context.get(), key.get()) == 1, "MD5 / 1024-bit fixture key pair");
-        for (bool post : {true, false}) {
+        for (unsigned mode : {0u, 1u, 2u}) {
+            const bool post = mode == 0, require_pin = mode == 2;
             Listener listener;
             std::string server_error;
             std::jthread server([&] {
@@ -82,6 +83,11 @@ int wmain(int argc, wchar_t** argv) {
                             "MD5 fixture handshake failed");
                     const char* sni = SSL_get_servername(tls.get(), TLSEXT_NAMETYPE_host_name);
                     require(sni && std::string_view(sni) == "mavis.scau.edu.cn", "SNI must stay fixed to school origin");
+                    if (require_pin) {
+                        char byte{};
+                        require(SSL_read(tls.get(), &byte, 1) <= 0, "A mismatched peer must receive no HTTP bytes");
+                        return;
+                    }
                     std::string request;
                     for (;;) {
                         char buffer[2048]; const auto n = SSL_read(tls.get(), buffer, sizeof(buffer));
@@ -111,7 +117,14 @@ int wmain(int argc, wchar_t** argv) {
             const auto result = school_tls_exchange(client.value, post ? "POST" : "GET",
                                                      post ? "/selfservice/fixture" : "/selfservice/fixture?s=fixture",
                                                      post ? "s=fixture" : "", GetTickCount64() + 4000, &diagnostics,
-                                                     nullptr, post ? "" : "JSESSIONID=fixture");
+                                                     nullptr, post ? "" : "JSESSIONID=fixture", require_pin);
+            if (require_pin) {
+                closesocket(client.value); client.value = INVALID_SOCKET;
+                server.join();
+                require(server_error.empty() && result.state == TransportState::CertificateError && diagnostics.connected,
+                        "The school certificate pin must reject an otherwise compatible peer before sending credentials");
+                continue;
+            }
             server.join();
             require(server_error.empty(), server_error.c_str());
             require(result.state == TransportState::Complete && diagnostics.connected &&

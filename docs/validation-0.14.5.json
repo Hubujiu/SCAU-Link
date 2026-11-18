@@ -1,0 +1,36 @@
+{
+  "product": "SCAU Link",
+  "version": "0.14.5",
+  "releaseChannel": "preview",
+  "previewReason": "双密码凭据隔离和原生交互测试通过；学校统一门户密码正确时的实网自助查询尚待复测",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-18T09:11:52.810114+00:00",
+  "automatedTests": {
+    "passed": 37,
+    "total": 37,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 4,
+    "total": 4,
+    "executedOnThisBuild": 4,
+    "method": "Synthetic native control interactions and result text.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "schoolReadOnlyCheck": {
+    "certificatePinValidated": true,
+    "credentialFree": true,
+    "httpStatus": 200,
+    "legacyRejection": 0
+  },
+  "notVerified": [
+    "Successful live self-service login with a distinct valid school portal password.",
+    "Live pause/resume, password change and new network authentication."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false,
+  "desktopSha256": "2a18f5f1083db7866a65394e89439fbb69550ae7b401fb70157244820263af4e",
+  "authenticationSha256": "56ef07533fd51bba22899eb6628bd77dbdb24f4191f69a32de8665878066a204",
+  "updaterSha256": "95deed70d070810880a22756a472ce340cbe703fdcc0b2092b45eebf08240038"
+}

@@ -287,6 +287,7 @@ std::wstring package_status_text(PackageState state) {
     case PackageState::TlsError: return L"套餐查询：TLS 连接失败";
     case PackageState::NetworkError: return L"套餐查询：网络异常";
     case PackageState::AuthError: return L"套餐查询：登录未通过";
+    case PackageState::MissingPortalCredential: return L"请在账号中填写统一门户密码";
     case PackageState::Unsupported: return L"套餐查询：数据不可用";
     case PackageState::Partial: return L"套餐查询：部分信息未提供";
     default: return {};
@@ -296,7 +297,7 @@ std::wstring package_status_text(const PackageInfo& info) {
     if (info.state != PackageState::AuthError || !info.query_rejection_code)
         return package_status_text(info.state);
     const auto code = *info.query_rejection_code;
-    const auto message = code == 0 ? L"自助服务账号或密码未通过" :
+    const auto message = code == 0 ? L"统一门户账号或密码未通过" :
         code == 2 ? L"自助接口拒绝访问" : L"自助接口拒绝查询";
     return L"套餐查询：" + std::wstring(message) + L"（代码 " + std::to_wstring(code) + L"）";
 }
@@ -422,7 +423,6 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
         diagnostics->tls_library_error = tls.tls_error;
         diagnostics->http_status = reply.response.status;
         diagnostics->tls_connected = tls.connected;
-        diagnostics->certificate_checks_disabled = tls.connected;
         diagnostics->legacy_tls_used = true;
         diagnostics->content_type = reply.response.content_type;
         diagnostics->response_bytes = static_cast<unsigned long>(reply.response.body.size());
@@ -430,6 +430,7 @@ PackageInfo query_package(const Credential& credential, const std::array<unsigne
         diagnostics->http_complete = reply.response.complete;
     }
     if (private_response) *private_response = reply.response.body;
+    if (reply.state == detail::TransportState::CertificateError) return failed(PackageState::CertificateError);
     if (reply.state == detail::TransportState::TlsError) return failed(PackageState::TlsError);
     if (reply.state == detail::TransportState::NetworkError) return failed(PackageState::NetworkError);
     if (reply.state != detail::TransportState::Complete) {

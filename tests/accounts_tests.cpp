@@ -88,6 +88,8 @@ int wmain() {
         auto loaded = store.load();
         require(loaded.first_account()->id == b && loaded.entries.back().id == a,
                 "Pin and drag order must survive reload without a separate preference");
+        Credential portal;
+        require(!store.read_portal(*loaded.find(a), portal), "Existing accounts never inherit a portal password");
         {
             std::ifstream file(directory / L"accounts.dat", std::ios::binary);
             std::string bytes((std::istreambuf_iterator<char>(file)), {});
@@ -129,22 +131,43 @@ int wmain() {
         Credential restored;
         require(store.read(*catalog.find(a), restored) && restored.password == first.password,
                 "Empty password on an existing account must retain its saved password");
-        require(catalog.find(a)->secret_id != old_secret,
-                "Credential replacement must use a fresh immutable vault record");
+        require(catalog.find(a)->secret_id == old_secret, "Keeping a password must keep its immutable version");
+        store.save(catalog, a, unchanged, L"independent-portal-password");
+        const auto old_portal = catalog.find(a)->portal_secret_id;
+        loaded = store.load();
+        require(!old_portal.empty() && loaded.find(a)->secret_id == old_secret &&
+                    store.read_portal(*loaded.find(a), portal) && portal.username == first.username &&
+                    portal.password == L"independent-portal-password" && !store.read_portal(*loaded.find(b), portal),
+                "A portal-only edit persists independently and only for the same account");
+        auto wrong_owner = *loaded.find(b);
+        wrong_owner.portal_secret_id = old_portal;
+        require(!store.read_portal(wrong_owner, portal) && portal.password.empty(),
+                "A mismatched Windows vault username must never supply portal credentials");
+        store.save(catalog, a, first);
+        require(catalog.find(a)->secret_id != old_secret && catalog.find(a)->portal_secret_id == old_portal,
+                "Replacing the network password keeps the same user's portal credential");
         Credential old;
         require(
             !CredentialStore(prefix + L"/" + std::wstring(old_secret.begin(), old_secret.end())).read(old),
             "Old secret should be retired only after commit");
+        store.save(catalog, a, unchanged, std::wstring_view{});
+        require(catalog.find(a)->portal_secret_id.empty() && vault_count(prefix) == before,
+                "Clearing the portal password must delete just that credential");
+        store.save(catalog, a, unchanged, L"bound-to-original-account");
         unchanged.username = L"renamed-account";
         rejects([&] { store.save(catalog, a, unchanged); }, "Changing a username requires its password");
+        unchanged.password = L"renamed-network-password";
+        store.save(catalog, a, unchanged);
+        require(!store.read_portal(*store.load().find(a), portal) && vault_count(prefix) == before,
+                "Renaming an account must retire its previous portal password");
         {
             std::ofstream blocked(directory / L"blocked");
             blocked << "test";
         }
         AccountStore blocked(directory / L"blocked", prefix, L"");
         AccountCatalog empty;
-        rejects([&] { blocked.save(empty, {}, second); },
-                "Catalog failure must roll back a staged credential");
+        rejects([&] { blocked.save(empty, {}, second, L"staged-portal-password"); },
+                "Catalog failure must roll back both staged credentials");
         require(empty.entries.empty() && vault_count(prefix) == before,
                 "A failed catalog commit must not leave a new credential");
         const auto good = [&] {

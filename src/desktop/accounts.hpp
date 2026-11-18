@@ -8,6 +8,7 @@ namespace scau::desktop {
 struct AccountInfo {
     std::string id, secret_id;
     std::wstring username;
+    std::string portal_secret_id;
 };
 struct AccountCatalog {
     std::vector<AccountInfo> entries;
@@ -36,7 +37,11 @@ class AccountStore {
         : directory_(std::move(directory)), prefix_(std::move(prefix)), legacy_(std::move(legacy)) {}
     AccountCatalog load();
     bool read(const AccountInfo &entry, Credential &value) const;
-    std::string save(AccountCatalog &catalog, std::string_view id, const Credential &value);
+    bool read_portal(const AccountInfo &entry, Credential &value) const;
+    // An absent edit keeps the portal password for the same username. An empty
+    // edit removes it. Both Windows credentials are bound to the catalog username.
+    std::string save(AccountCatalog &catalog, std::string_view id, const Credential &value,
+                     std::optional<std::wstring_view> portal_password = {});
     void pin(AccountCatalog &catalog, std::string_view id);
     void reorder(AccountCatalog &catalog, const std::vector<std::string> &ids);
     void remove(AccountCatalog &catalog, std::string_view id);
