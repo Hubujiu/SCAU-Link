@@ -16,7 +16,7 @@
 
 客户端从固定仓库的 [GitHub Releases API](https://docs.github.com/en/rest/releases/releases) 查询发布，排除草稿、旧版本和不匹配的通道。API 不携带 GitHub Token、校园账号或密码。
 
-发布附带 `SCAU-Link-update.json` 与独立的 64 字节 Ed25519 签名。程序内置公钥，签名绑定版本、通道、架构、文件名、大小、SHA-256 和下载地址；下载后及安装前均核对安装包。私钥位于本机忽略的 `build/signing/`，不会进入仓库、源码包、安装包或 Actions 缓存。
+发布附带 `SCAU-Link-update.json` 与独立的 64 字节 Ed25519 签名。程序内置公钥，签名绑定版本、通道、架构、文件名、大小、SHA-256 和下载地址；下载后及安装前均核对安装包。自 0.14.5 起，签名工具默认从 `%LOCALAPPDATA%\SCAULinkRelease\Signing\update-ed25519.pem` 读取本机私钥。私钥和加密备份保存在工作区外，不随发布分发。
 
 更新联网与学校旧证书兼容完全分离，使用标准 Windows TLS 校验。手动检查 HTTPS 重定向，只接受固定 GitHub 仓库及 GitHub 下载域，不接受 HTTP、其他主机或携带用户信息的 URL。[WinHTTP 重定向说明](https://learn.microsoft.com/en-us/windows/win32/winhttp/winhttp-security-considerations)。
 

@@ -2,12 +2,13 @@
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PRIVATE = ROOT / 'build/signing/update-ed25519.pem'
+PRIVATE = Path(os.environ.get('LOCALAPPDATA') or Path.home() / 'AppData/Local') / 'SCAULinkRelease/Signing/update-ed25519.pem'
 PUBLIC = ROOT / 'assets/update-public-key.hex'
 
 
