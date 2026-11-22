@@ -93,10 +93,6 @@ def source_archive(target):
     version = re.search(r'project\(ScauNativeAuth VERSION ([\d.]+)',
                         (ROOT/'CMakeLists.txt').read_text(encoding='utf-8')).group(1)
     files = [ROOT/p for p in ['CMakeLists.txt','README.md','LICENSE','THIRD_PARTY_NOTICES.md']]
-    files.extend(ROOT/'rust'/p for p in ['Cargo.toml','Cargo.lock'])
-    files.extend((ROOT/'rust').glob('*/Cargo.toml'))
-    for crate_source in (ROOT/'rust').glob('*/src'):
-        files.extend(crate_source.rglob('*.rs'))
     for folder in ['src','tests','scripts','installer','third_party','assets']:
         files.extend(p for p in (ROOT/folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts
                      and p.suffix.lower() not in {'.pyc','.pdb','.obj','.exe','.dll','.lib','.cur','.ani'})

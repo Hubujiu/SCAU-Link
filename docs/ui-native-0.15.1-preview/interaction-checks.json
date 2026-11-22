@@ -1,0 +1,18 @@
+[
+  {
+    "check": "Portal password rejection and success in the regular editor",
+    "passed": true
+  },
+  {
+    "check": "Portal password rejection and success in the mini editor",
+    "passed": true
+  },
+  {
+    "check": "Billing on a network-only connection",
+    "passed": true
+  },
+  {
+    "check": "Billing on a wireless 802.1X connection",
+    "passed": true
+  }
+]

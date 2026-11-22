@@ -2,7 +2,6 @@
 #include "account_pointer.hpp"
 #include "popup_menu.hpp"
 #include "list_scrollbar.hpp"
-#include "nsh_dashboard.hpp"
 #include "spring.hpp"
 #include "visual.hpp"
 #include "updates.hpp"
@@ -13,13 +12,10 @@
 #include <commctrl.h>
 #include <d2d1.h>
 #include <dwmapi.h>
-#include <future>
 #include <memory>
-#include <ole2.h>
 #include <shellapi.h>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <uxtheme.h>
 #include <vector>
 #include <windowsx.h>
@@ -29,7 +25,7 @@ using Microsoft::WRL::ComPtr;
 namespace scau::desktop {
 namespace {
 constexpr wchar_t root_class[] = L"ScauLink.Native.Window", page_class[] = L"ScauLink.Native.Page";
-constexpr UINT tray_message = WM_APP + 21, show_message = WM_APP + 22, dashboard_message = WM_APP + 24;
+constexpr UINT tray_message = WM_APP + 21, show_message = WM_APP + 22;
 constexpr UINT_PTR animation_timer = 1, uptime_timer = 2, exit_timer = 3, progress_timer = 4, search_timer = 5,
                    package_timer = 6, update_timer = 7;
 constexpr int account_row_height = 84, account_row_gap = 12;
@@ -215,8 +211,6 @@ class App {
     std::wstring log_error;
     PageId current = Home;
     std::array<Page, PageCount> pages;
-    DashboardHandle dashboard{nullptr, scau_dashboard_destroy};
-    HWND dashboard_window{};
     std::vector<Control> chrome;
     std::array<HFONT, FontCount> fonts{};
     UINT dpi = 96, taskbar_created{};
@@ -461,19 +455,15 @@ class App {
              {2, L"无线 Web", visual::Icon::Wifi, true, false, settings.mode == ConnectionMode::WirelessWeb},
              {3, L"无线 802.1X", visual::Icon::Wifi, true, false, settings.mode == ConnectionMode::Wireless8021x}},
             [this](int choice) {
-                select_connection_mode(choice == 3 ? ConnectionMode::Wireless8021x : choice == 2 ? ConnectionMode::WirelessWeb : ConnectionMode::Wired);
+                auto next = settings;
+                next.mode = choice == 3 ? ConnectionMode::Wireless8021x : choice == 2 ? ConnectionMode::WirelessWeb : ConnectionMode::Wired;
+                if (next.mode == settings.mode) return;
+                pending_settings = true;
+                backend->save_preferences(next);
+                refresh_visible();
             }, dpi, animations, L"上网模式", 184,
             [this] { filter_open(ConnectionModePicker, false); });
         filter_open(ConnectionModePicker, true);
-    }
-    void select_connection_mode(ConnectionMode mode) {
-        if (!initialized || connected_or_busy(status) || status == Status::Stopping ||
-            pending_settings || pending_credential || mode == settings.mode) return;
-        auto next = settings;
-        next.mode = mode;
-        pending_settings = true;
-        backend->save_preferences(next);
-        refresh_visible();
     }
     void show_startup_modes(int id) {
         if (!initialized || pending_settings || settings.mini) return;
@@ -989,11 +979,6 @@ class App {
         if (!p.window)
             throw std::runtime_error("Cannot create native page");
         if (id == Home) {
-            dashboard.reset(scau_dashboard_create(p.window, window, dashboard_message, &dashboard_window));
-            if (dashboard) {
-                SetWindowLongPtrW(dashboard_window, GWL_STYLE, GetWindowLongPtrW(dashboard_window, GWL_STYLE) | WS_TABSTOP);
-                return;
-            }
             label(p, L"连接", Heading, Title);
             button(p, L"有线 802.1X", ConnectionModePicker);
             label(p, L"正在加载", StateText, Large);
@@ -1083,62 +1068,36 @@ class App {
         if (!pages[id].window)
             return;
         if (id == Home) {
-            auto account_value = status == Status::Online ? active_username :
-                 masked(status == Status::Error && !active_username.empty() ? active_username : username);
+            text(Home, StateText, status_text(status, credentials));
+            text(Home, StateMessage, message);
+            text(Home, AccountValue,
+                 status == Status::Online ? active_username :
+                 masked(status == Status::Error && !active_username.empty() ? active_username : username));
             if (status == Status::Online && active_account_id.empty()) {
                 if (const auto* account = account_catalog.find(home_package_account()))
-                    account_value = L"账号未确认 · 套餐账号 " + account->username;
+                    text(Home, AccountValue, L"账号未确认 · 套餐账号 " + account->username);
             }
             const auto& billing = package_for(home_package_account());
             SYSTEMTIME local{}; GetLocalTime(&local);
             const std::chrono::year_month_day today{std::chrono::year{int(local.wYear)},
                                                      std::chrono::month{local.wMonth}, std::chrono::day{local.wDay}};
-            const auto balance = L"余额 " + (billing.state == PackageState::Loading && !billing.balance
-                                                ? std::wstring(L"加载中") : money_text(billing.balance));
+            text(Home, HomeBalance, L"余额 " + (billing.state == PackageState::Loading && !billing.balance
+                                                   ? std::wstring(L"加载中") : money_text(billing.balance)));
             const auto query_status = package_status_text(billing);
-            const auto expiry = !billing.balance && !query_status.empty() ? query_status : package_expiry_text(billing, today);
-            const auto devices = device_count_text(billing.online_devices);
-            const bool portal = !portal_ticket.empty();
-            const bool busy = connected_or_busy(status);
-            const auto action = settings.mini && portal ? L"登录" : busy ? L"断开连接" : credentials ? L"连接" : L"登录";
-            const auto login = portal ? L"断开连接" : L"登录";
-            const bool mode_enabled = initialized && !busy && status != Status::Stopping && !pending_settings && !pending_credential;
-            const bool action_enabled = initialized && status != Status::Stopping && !pending_credential &&
-                                        !pending_settings && !(settings.mini && portal_approving);
-            if (dashboard) {
-                const auto state = status_text(status, credentials);
-                const auto duration = uptime_text();
-                const bool show_login = (settings.mini && portal) || (credentials && !busy && status != Status::Stopping);
-                std::uint32_t flags = 0;
-                if (settings.mini) flags |= DashboardMini;
-                if (status == Status::Online) flags |= DashboardOnline;
-                if (show_details) flags |= DashboardDetails;
-                if (mode_enabled) flags |= DashboardSelectMode;
-                if (action_enabled) flags |= DashboardCanAct;
-                if (!portal_approving) flags |= DashboardCanApprove;
-                if (portal) flags |= DashboardPortal;
-                const auto mode = display_mode();
-                const DashboardInput input{state.c_str(), message.c_str(), credentials ? account_value.c_str() : L"", action,
-                    show_login ? login : L"", balance.c_str(), expiry.c_str(), query_status.c_str(), duration.c_str(),
-                    adapter.c_str(), devices.c_str(), mode == ConnectionMode::Wired ? 0u : mode == ConnectionMode::WirelessWeb ? 1u : 2u, flags};
-                scau_dashboard_update(dashboard.get(), &input);
-                return;
-            }
-            text(Home, StateText, status_text(status, credentials));
-            text(Home, StateMessage, message);
-            text(Home, AccountValue, account_value);
-            text(Home, HomeBalance, balance);
-            text(Home, HomeExpiry, expiry);
-            text(Home, PackageStatus, query_status);
-            text(Home, HomeDevices, devices);
-            text(Home, Action, action);
-            text(Home, Login, login);
+            text(Home, HomeExpiry, !billing.balance && !query_status.empty() ? query_status : package_expiry_text(billing, today));
+            text(Home, PackageStatus, package_status_text(billing));
+            text(Home, HomeDevices, device_count_text(billing.online_devices));
+            text(Home, Action, settings.mini && !portal_ticket.empty() ? L"登录" : connected_or_busy(status) ? L"断开连接" : credentials ? L"连接" : L"登录");
+            text(Home, Login, !portal_ticket.empty() ? L"断开连接" : L"登录");
             EnableWindow(ctrl(Home,PortalAccept),!portal_approving);
             text(Home, AdapterValue, adapter);
             text(Home, Details, show_details ? L"收起详情" : L"连接详情");
             text(Home, ConnectionModePicker, connection_mode_label(display_mode()));
-            EnableWindow(ctrl(Home, ConnectionModePicker), mode_enabled);
-            EnableWindow(ctrl(Home, Action), action_enabled);
+            EnableWindow(ctrl(Home, ConnectionModePicker), initialized && !connected_or_busy(status) &&
+                         status != Status::Stopping && !pending_settings && !pending_credential);
+            EnableWindow(ctrl(Home, Action),
+                         initialized && status != Status::Stopping && !pending_credential && !pending_settings &&
+                         !(settings.mini && portal_approving));
             update_uptime();
         } else if (id == Account) {
             if (password_view) {
@@ -1229,10 +1188,6 @@ class App {
             return;
         auto put = [&](int control, Box b, bool visible = true) { place(ctrl(id, control), b, visible); };
         if (id == Home) {
-            if (dashboard) {
-                place(dashboard_window, {0, 0, width, height});
-                return;
-            }
             if (settings.mini) {
                 put(Heading, {0, 0, 1, 1}, false);
                 put(ConnectionModePicker, {0, 0, 1, 1}, false);
@@ -1470,15 +1425,13 @@ class App {
                 layout();
         }
     }
-    std::wstring uptime_text() const {
+    void update_uptime() {
+        if (!pages[Home].window)
+            return;
         const auto seconds = status == Status::Online ? (GetTickCount64() - online_since) / 1000 : 0;
         wchar_t t[64]{};
         swprintf_s(t, L"%02llu:%02llu:%02llu", seconds / 3600, (seconds / 60) % 60, seconds % 60);
-        return t;
-    }
-    void update_uptime() {
-        if (dashboard) update_page(Home);
-        else text(Home, Duration, uptime_text());
+        text(Home, Duration, t);
     }
     void timers() {
         const bool visible = IsWindowVisible(window) && !IsIconic(window);
@@ -1491,7 +1444,7 @@ class App {
         else
             KillTimer(window, uptime_timer);
         const bool progress = visible &&
-            ((current == Home && !dashboard && (status == Status::Loading || status == Status::Connecting || status == Status::Recovering)) ||
+            ((current == Home && (status == Status::Loading || status == Status::Connecting || status == Status::Recovering)) ||
              (current == Logs && logs_loading) || (current == Account && ((account_service && campus_busy) || (password_view && password_busy))));
         if (progress && animations)
             SetTimer(window, progress_timer, 16, nullptr);
@@ -1985,8 +1938,7 @@ class App {
             navigate(Home);
             break;
         case Action:
-            if (!initialized || status == Status::Stopping || pending_credential || pending_settings ||
-                (settings.mini && portal_approving))
+            if (!initialized || status == Status::Stopping)
                 return;
             if (settings.mini && !portal_ticket.empty()) { command(PortalAccept); break; }
             if (connected_or_busy(status)) {
@@ -2169,19 +2121,6 @@ class App {
             break;
         }
     }
-    void dashboard_command(DashboardCommand action) {
-        if (current != Home || !dashboard || !IsWindowVisible(window) || exiting || update_installing())
-            return;
-        switch (action) {
-        case DashboardCommand::Action: command(Action); break;
-        case DashboardCommand::Login: command(Login); break;
-        case DashboardCommand::ApprovePortal: command(PortalAccept); break;
-        case DashboardCommand::Details: command(Details); break;
-        case DashboardCommand::Wired: select_connection_mode(ConnectionMode::Wired); break;
-        case DashboardCommand::WirelessWeb: select_connection_mode(ConnectionMode::WirelessWeb); break;
-        case DashboardCommand::Wireless8021x: select_connection_mode(ConnectionMode::Wireless8021x); break;
-        }
-    }
     void exit() {
         if (exiting)
             return;
@@ -2264,14 +2203,9 @@ class App {
             }catch(...){update_snapshot.phase=updates::Phase::Failed;update_snapshot.error=ERROR_ACCESS_DENIED;}
         }
         MSG msg{};
-        BOOL message_result = 0;
-        while ((message_result = GetMessageW(&msg, nullptr, 0, 0)) > 0) {
+        while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
             if (popup.filter(msg))
                 continue;
-            if (msg.message == WM_KEYDOWN && msg.wParam == VK_F6 && current == Home && dashboard) {
-                SetFocus(msg.hwnd == dashboard_window ? chrome_ctrl(settings.mini ? MiniSettings : NavHome) : dashboard_window);
-                continue;
-            }
             if (msg.message == WM_KEYDOWN && current == Logs) {
                 if (msg.wParam == 'F' && (GetKeyState(VK_CONTROL) & 0x8000)) {
                     SetFocus(ctrl(Logs, LogSearch));
@@ -2327,12 +2261,11 @@ class App {
                 if (!(msg.lParam & (LPARAM(1) << 30))) command(TestPortalPassword);
                 continue;
             }
-            if (msg.hwnd == dashboard_window || !IsDialogMessageW(window, &msg)) {
+            if (!IsDialogMessageW(window, &msg)) {
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
         }
-        const int exit_code = message_result == 0 ? static_cast<int>(msg.wParam) : 1;
         updater.reset();
         backend.reset();
         while (PeekMessageW(&msg, nullptr, backend_message, backend_message, PM_REMOVE))
@@ -2346,7 +2279,7 @@ class App {
             DestroyIcon(gray);
         if (amber)
             DestroyIcon(amber);
-        return exit_code;
+        return int(msg.wParam);
     }
 };
 
@@ -3075,8 +3008,7 @@ LRESULT CALLBACK App::page_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         }
         break;
     case WM_PAINT:
-        if (page->id == Home && app.dashboard) ValidateRect(h, nullptr);
-        else app.paint_page(*page);
+        app.paint_page(*page);
         return 0;
     case WM_ERASEBKGND:
         return TRUE;
@@ -3166,9 +3098,6 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         return 0;
     case backend_message:
         app->received(std::unique_ptr<Event>(reinterpret_cast<Event *>(l)));
-        return 0;
-    case dashboard_message:
-        app->dashboard_command(static_cast<DashboardCommand>(w));
         return 0;
     case updates::changed_message:
         app->update_changed();
@@ -3291,8 +3220,6 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             DestroyWindow(h);
         return 0;
     case WM_DESTROY: {
-        app->dashboard.reset();
-        app->dashboard_window = nullptr;
         KillTimer(h, animation_timer);
         KillTimer(h, uptime_timer);
         KillTimer(h, exit_timer);
@@ -3315,10 +3242,10 @@ LRESULT CALLBACK App::root_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
 } // namespace scau::desktop
 
 #include "startup.hpp"
-static int run_desktop(HINSTANCE instance) {
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     using namespace scau::desktop;
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
-    if (FAILED(OleInitialize(nullptr))) return 1;
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     int argc = 0;
     LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv && argc == 2 && (std::wstring_view(argv[1]) == L"--repair-startup" ||
@@ -3328,7 +3255,7 @@ static int run_desktop(HINSTANCE instance) {
             if (std::wstring_view(argv[1]) == L"--remove-owned-startup") remove_owned_startup_task(executable_path());
             else if (auto_start_enabled()) set_auto_start(true, executable_path());
         } catch (const std::exception&) { result = 1; }
-        LocalFree(argv); OleUninitialize(); return result;
+        LocalFree(argv); CoUninitialize(); return result;
     }
     App app;
     app.instance = instance;
@@ -3385,7 +3312,7 @@ static int run_desktop(HINSTANCE instance) {
         else if (argument == L"--startup") app.options.startup = true;
         else {
             LocalFree(argv);
-            OleUninitialize();
+            CoUninitialize();
             return 2;
         }
     }
@@ -3400,7 +3327,7 @@ static int run_desktop(HINSTANCE instance) {
                     PostMessageW(existing, show_message, 0, 0);
             if (single)
                 CloseHandle(single);
-            OleUninitialize();
+            CoUninitialize();
             return 0;
         }
     }
@@ -3413,25 +3340,6 @@ static int run_desktop(HINSTANCE instance) {
     }
     if (single)
         CloseHandle(single);
-    OleUninitialize();
+    CoUninitialize();
     return result;
-}
-
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
-    // NSH caches the Windows graphics device in UI-thread storage. Leave the
-    // thread parked after orderly shutdown so its device is never destroyed
-    // by a TLS destructor while the graphics driver is being unloaded.
-    try {
-        std::promise<int> done;
-        auto result = done.get_future();
-        std::thread([instance, done = std::move(done)]() mutable {
-            int code = 1;
-            try { code = run_desktop(instance); } catch (...) {}
-            done.set_value(code);
-            Sleep(INFINITE);
-        }).detach();
-        return result.get();
-    } catch (...) {
-        return 1;
-    }
 }

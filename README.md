@@ -1,16 +1,18 @@
 # SCAU Link
 
-华南农业大学校园网 Windows 原生客户端。连接页使用 Rust 和 Native Shell（NSH），有线认证的 EAPOL 解析和重连状态机使用 Rust。账号、设置、记录、托盘和 Windows 网络接口继续使用 C++20/Win32。应用采用 Direct2D 和 DirectWrite，无需网页运行时。
+华南农业大学校园网 Windows 原生客户端，使用 C++20、Win32、Direct2D 和 DirectWrite，无网页运行时。
 
-[下载安装包](https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.15.0-preview) · [首次使用](docs/SCAU-First-Run-0.15.0.md) · [验证与性能对比](docs/Network-Delivery-Results-0.15.0.md)
+[下载安装包](https://github.com/Hubujiu/SCAU-Link/releases/tag/v0.15.1-preview) · [首次使用](docs/SCAU-First-Run-0.15.1.md) · [验证报告](docs/Network-Delivery-Results-0.15.1.md)
 
-**0.14.5 更换了发布签名密钥。** 0.14.4 及更早版本需要从 GitHub 下载安装包手动升级一次。安装前退出旧客户端，再安装到原目录以保留账号和设置。本版更换认证核心，0.14.5 的更新界面会提示完整安装可能断网。
+**0.15.1 回撤了 0.15.0 的 Rust／NSH 迁移。** 本版恢复 0.14.5 的 C++ 认证核心和 Win32 界面，保持 0.14.5 引入的发布签名身份。
+
+**0.14.5 更换了发布签名密钥。** 0.14.4 及更早版本需要从 GitHub 下载安装包手动升级一次。安装前退出旧客户端，再安装到原目录以保留账号和设置。启动 0.14.5 或本版后即可接收后续自动更新。
 
 ## 使用
 
 安装到所需目录，在“账号”页保存校园网账号和密码，然后选择有线 802.1X、SCAUNET Web 或 SCAUNET_1x。三种连接方式共用账号；网卡和学校参数在本机生成，无须原锐捷、抓包或导入配置。有线需要已安装的 WinPcap/Npcap，无线使用 Windows WLAN/EAP；电脑须有可用的 IP/DNS 配置。
 
-一个校园网账号可分别保存校园网密码和统一门户密码。统一门户密码为选填，用于余额、套餐、在线设备数以及校园网暂停和恢复。在“账号 → 管理”里填写后点“测试”，可以在保存前验证自助服务是否走通。 [账号设置说明](docs/SCAU-First-Run-0.15.0.md)
+从 0.14.5 起，一个校园网账号可分别保存校园网密码和统一门户密码。统一门户密码为选填，用于余额、套餐、在线设备数以及校园网暂停和恢复。在“账号 → 管理”里填写后点“测试”，可以在保存前验证自助服务是否走通。 [账号设置说明](docs/SCAU-First-Run-0.15.1.md)
 
 支持多账号拖动排序，按顺序登录，明确的账号拒绝重试一次后尝试下一账号；环境错误和未知认证结果不会盲目换号。当前成功认证的账号显示“活跃中”。主页和账号页查询余额、套餐周期费用及已知期限；主页根据余额可支付的完整周期显示“预计到期”，有当前账期时先保留本期剩余时间，固定天数套餐按实际天数、月费套餐按自然月计算；仅有余额与月费时从当天估算。学校明确返回的到期日优先，缺少必要数据时显示未知或本期剩余天数，预计扣费日期明确标注。Web 已放行但无法核实账号时显示“账号未确认”。
 
@@ -28,19 +30,19 @@
 
 账号和两套密码分别保存在当前 Windows 用户的凭据管理器。`%LOCALAPPDATA%\ScauLink` 保存设置、账号随机标识及脱敏记录。密码不进入命令行、普通配置或日志。0.14.5 在向学校自助服务发送凭据前校验学校证书指纹，GitHub 更新使用正常证书验证。仓库、安装包和源码包均不包含私人抓包、配置、Cookie 或发布私钥。
 
-本版 Release CTest **37/37** 通过，覆盖 Rust 协议边界、重连、NSH 连接操作、双密码和更新校验。真实校园网认证与自助服务未在本版复测。 [验证报告](docs/Network-Delivery-Results-0.15.0.md)
+本版 Release CTest **37/37** 通过，覆盖有线恢复、双密码凭据、原生界面和更新校验。校园网实网认证和自助服务待复测。 [验证报告](docs/Network-Delivery-Results-0.15.1.md)
 
 客户端按认证核心与运行库的实际摘要决定更新方式。此前本机普通权限下完成的 Web 新登录、SCAUNET_1x 登录及核心崩溃后重登属于 [0.12.0 历史证据](docs/Network-Delivery-Results-0.12.0.md)。本版未重新实测无线新登录、其他电脑、Windows 实际重启、漫游、休眠或长时在线，也未提交真实改密及校园网暂停／恢复。
 
 ## 构建
 
-需要 Windows 10/11 x64、Visual Studio 2022 Build Tools、Windows SDK、Rust 1.97+（x86_64 MSVC 工具链）、CMake 和 Python 3.12+。
+需要 Windows 10/11 x64、Visual Studio 2022 Build Tools、Windows SDK、CMake 和 Python 3.12+：
 
 ```powershell
 .\scripts\build.ps1 -Configuration Release
 ```
 
-脚本校验随源码提供的 OpenSSL 源码，首次下载并校验便携 Perl，在工作区静态编译依赖。Cargo 按 `rust/Cargo.lock` 获取 NSH 和依赖，通过 CMake 链接到现有 Windows 程序。GitHub Actions 在 Windows 2022 上编译并执行离线检查，不使用校园账号或发布私钥。
+脚本校验随源码提供的 OpenSSL 源码，首次下载并校验便携 Perl，在工作区静态编译依赖。版本、来源及许可见 `third_party/openssl/`。GitHub Actions 在 Windows 2022 上编译并执行离线检查，不使用校园账号或发布私钥。
 
 运行 `build/Release/SCAU-Link.exe`，保持 `scau-auth.exe`、`scau-update.exe` 和运行库 DLL 在同一目录。仅查看演示可使用 `--demo-package` 或 `--demo-update`，不会发起校园认证。
 

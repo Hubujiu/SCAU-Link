@@ -17,17 +17,17 @@ void require(bool value, const char* message) {
     if (!value) throw std::runtime_error(message);
 }
 
-void empty(const RecoveryTransition& actions, const char* message) {
-    require(!actions, message);
+void empty(const RecoveryActions& actions, const char* message) {
+    require(actions.empty(), message);
 }
 
-void one(const RecoveryTransition& actions, RecoveryActionKind kind, const char* message) {
-    require(actions && actions->kind == kind, message);
+void one(const RecoveryActions& actions, RecoveryActionKind kind, const char* message) {
+    require(actions.size() == 1 && actions.front().kind == kind, message);
 }
 
-void wait_for(const RecoveryTransition& actions, RecoveryReason reason, const char* message) {
+void wait_for(const RecoveryActions& actions, RecoveryReason reason, const char* message) {
     one(actions, RecoveryActionKind::Waiting, message);
-    require(actions->reason == reason, message);
+    require(actions.front().reason == reason, message);
 }
 
 void deadline(const RecoveryController& controller, Time expected, const char* message) {
@@ -212,7 +212,7 @@ void test_periodic_and_requested_reauth_keep_lease() {
     empty(controller.tick(60001, 0), "Periodic reauth waits for its full interval");
     const auto periodic = controller.tick(60002, 0);
     one(periodic, RecoveryActionKind::BeginExchange, "Periodic reauth sends Start with fresh exchange state");
-    require(periodic->reason == RecoveryReason::PeriodicReauth, "Periodic action is identifiable");
+    require(periodic.front().reason == RecoveryReason::PeriodicReauth, "Periodic action is identifiable");
     require(controller.connected() && controller.reauth_pending(), "Periodic Start retains existing authenticated lease");
     controller.request(60003, false);
     controller.request(68000, true);
@@ -454,7 +454,7 @@ void test_eight_hours_and_observation_does_not_stop_recovery() {
         if (second > 1 && second % 600 == 1)
             wait_for(reconnecting.link_changed(now, true), RecoveryReason::LinkDebounce, "Repeated long-run link restoration debounces");
         const auto actions = reconnecting.tick(now, second % 20);
-        if (actions) {
+        if (!actions.empty()) {
             one(actions, RecoveryActionKind::ReopenTransport, "Long-run restoration must reopen once per loss");
             ++reopen_count;
             one(reconnecting.transport_ready(now), RecoveryActionKind::BeginExchange, "Reopen completion starts a new exchange");
@@ -472,9 +472,9 @@ void test_eight_hours_and_observation_does_not_stop_recovery() {
     no_server.start(0, true);
     for (unsigned second = 1; second <= last_second; ++second) {
         const auto actions = no_server.tick(Time{second} * 1000, second % 20);
-        if (actions)
-            require(actions->kind == RecoveryActionKind::RetryStart || actions->kind == RecoveryActionKind::BeginExchange ||
-                    (actions->kind == RecoveryActionKind::Waiting && actions->reason == RecoveryReason::NoServerResponse),
+        for (const auto& action : actions)
+            require(action.kind == RecoveryActionKind::RetryStart || action.kind == RecoveryActionKind::BeginExchange ||
+                    (action.kind == RecoveryActionKind::Waiting && action.reason == RecoveryReason::NoServerResponse),
                     "No-server cycles never manufacture Connected or consume transient failure policy");
         require(!no_server.stopped() && no_server.backoff_attempts() == 0 && no_server.start_attempts() <= 3,
                 "No-server retry survives eight hours with bounded per-cycle Starts");
@@ -487,7 +487,7 @@ void test_eight_hours_and_observation_does_not_stop_recovery() {
     for (unsigned second = 1; second <= last_second; ++second) {
         const auto now = Time{second} * 1000;
         const auto actions = periodic.tick(now, 0);
-        if (actions) {
+        if (!actions.empty()) {
             one(actions, RecoveryActionKind::BeginExchange, "Long-running periodic reauth begins one exchange");
             require(periodic.connected(), "Periodic Start must not reset continuous observation lease");
             periodic.request(now, true);
@@ -528,12 +528,12 @@ int main() {
             one(terminated.server_terminated(300),RecoveryActionKind::Rejected,
                 "Authenticated SAM termination must survive link, power, transport and reauth transitions");
             require(!terminated.connected() && terminated.state()==RecoveryState::Rejected &&
-                    terminated.reason()==RecoveryReason::ServerRejected && !terminated.tick(100000,0),
+                    terminated.reason()==RecoveryReason::ServerRejected && terminated.tick(100000,0).empty(),
                 "A confirmed server termination must never schedule automatic login");
         }
         RecoveryController manually_stopped;
         establish(manually_stopped,0,0);manually_stopped.stop(100);
-        require(!manually_stopped.server_terminated(200) && manually_stopped.stopped(),
+        require(manually_stopped.server_terminated(200).empty() && manually_stopped.stopped(),
             "Manual stop must retain priority over a late SAM termination");
         test_eight_hours_and_observation_does_not_stop_recovery();
         std::cout << "PASS: recovery fake-clock policies; bounded rejection retries; link/power/transport gates; "

@@ -69,26 +69,27 @@ void encode_network(std::span<Byte> data) {
         byte = Byte(~reversed);
     }
 }
-struct EapolHeader {
-    std::size_t payload_offset, payload_length;
-    Byte version, type, code, identifier, method;
-};
-extern "C" bool scau_parse_eapol(const Byte*, std::size_t, EapolHeader*);
-
 Frame parse_frame(std::span<const Byte> packet) {
-    EapolHeader header{};
-    if (!scau_parse_eapol(packet.data(), packet.size(), &header))
-        throw std::runtime_error("Invalid Ethernet/EAPOL frame");
-    Frame frame{};
-    std::copy_n(packet.begin(), 6, frame.destination.begin());
-    std::copy_n(packet.begin() + 6, 6, frame.source.begin());
-    frame.version = header.version;
-    frame.type = header.type;
-    frame.code = header.code;
-    frame.identifier = header.identifier;
-    frame.method = header.method;
-    frame.eap = packet.subspan(header.payload_offset, header.payload_length);
-    frame.trailing = packet.subspan(header.payload_offset + header.payload_length);
+    if (packet.size()<18) throw std::runtime_error("Truncated Ethernet/EAPOL frame");
+    Frame frame; std::copy_n(packet.begin(),6,frame.destination.begin()); std::copy_n(packet.begin()+6,6,frame.source.begin());
+    auto protocol=be16(packet,12); std::size_t offset=14;
+    while (protocol==0x8100 || protocol==0x88a8 || protocol==0x9100) { protocol=be16(packet,offset+2); offset+=4; }
+    if (protocol!=0x888e || offset+4>packet.size()) throw std::runtime_error("Not an EAPOL frame");
+    frame.version=packet[offset]; frame.type=packet[offset+1];
+    const auto length=be16(packet,offset+2);
+    if (offset+4+length>packet.size()) throw std::runtime_error("EAPOL payload exceeds captured frame");
+    frame.eap=packet.subspan(offset+4,length); frame.trailing=packet.subspan(offset+4+length);
+    if (frame.type==0) {
+        if (frame.eap.size()<4) throw std::runtime_error("Missing EAP header");
+        frame.code=frame.eap[0]; frame.identifier=frame.eap[1];
+        const auto eap_length=be16(frame.eap,2);
+        if (eap_length<4 || eap_length>frame.eap.size()) throw std::runtime_error("Invalid EAP length");
+        if (frame.code==1 || frame.code==2) {
+            if (eap_length<5) throw std::runtime_error("Missing EAP method");
+            frame.method=frame.eap[4];
+            if (frame.method==4 && (eap_length<6 || frame.eap[5]>eap_length-6)) throw std::runtime_error("Truncated MD5 challenge");
+        }
+    }
     return frame;
 }
 std::vector<Property> parse_client_properties(std::span<const Byte> tail) {

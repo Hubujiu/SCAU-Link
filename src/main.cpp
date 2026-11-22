@@ -535,36 +535,37 @@ int run(const Options& config,Logger& logger,Credentials* supplied=nullptr,Worke
             last_state=controller.state();
         }
     };
-    auto enact=[&](RecoveryTransition next) {
-        while(next) {
-            const auto action=*next; next.reset();
-            const auto now=GetTickCount64();
+    std::function<void(RecoveryActions)> enact;
+    enact=[&](RecoveryActions actions) {
+        for(std::size_t i=0;i<actions.size();++i) {
+            const auto action=actions[i];const auto now=GetTickCount64();
             if(terminal_error && action.kind!=RecoveryActionKind::Rejected && action.kind!=RecoveryActionKind::Stopped)break;
+            auto append=[&](RecoveryActions more){actions.insert(actions.end(),more.begin(),more.end());};
             try {
                 switch(action.kind) {
                 case RecoveryActionKind::BeginExchange: {
                     clear_exchange();
                     if(terminal_error)break;
                     auto selected=inspect_adapter(base_profile);
-                    if(!selected || !selected->link_up){transport.reset();next=controller.link_changed(now,false);break;}
-                    if(selected->name!=transport_adapter_name || selected->index!=transport_adapter_index){transport.reset();next=controller.transport_error(now);break;}
+                    if(!selected || !selected->link_up){transport.reset();append(controller.link_changed(now,false));break;}
+                    if(selected->name!=transport_adapter_name || selected->index!=transport_adapter_index){transport.reset();append(controller.transport_error(now));break;}
                     adapter=std::move(*selected);
                     if(!adapter.ipv4_ready)logger.event("network_profile_pending","Authenticating at Ethernet layer with current zero IPv4 fields");
-                    if(!send(make_simple(adapter.mac,multicast,1))){next=controller.stop(now);break;}
+                    if(!send(make_simple(adapter.mac,multicast,1))){append(controller.stop(now));break;}
                     logger.event("start_sent");break;
                 }
                 case RecoveryActionKind::RetryStart:
-                    if(!send(make_simple(adapter.mac,multicast,1))){next=controller.stop(now);break;}
+                    if(!send(make_simple(adapter.mac,multicast,1))){append(controller.stop(now));break;}
                     logger.event("start_retry",{},controller.start_attempts());break;
                 case RecoveryActionKind::ReopenTransport: {
                     clear_exchange();if(terminal_error)break;transport.reset();
                     try {
                         auto selected=inspect_adapter(base_profile);
-                        if(!selected || !selected->link_up){next=controller.link_changed(now,false);break;}
+                        if(!selected || !selected->link_up){append(controller.link_changed(now,false));break;}
                         adapter=std::move(*selected);transport=std::make_unique<Transport>(adapter);
                         transport_adapter_name=adapter.name;transport_adapter_index=adapter.index;
-                        logger.event("transport_reopened");next=controller.transport_ready(GetTickCount64());
-                    }catch(const std::exception&){logger.event("transport_open_failed");next=controller.transport_error(GetTickCount64());}
+                        logger.event("transport_reopened");append(controller.transport_ready(GetTickCount64()));
+                    }catch(const std::exception&){logger.event("transport_open_failed");append(controller.transport_error(GetTickCount64()));}
                     break;
                 }
                 case RecoveryActionKind::Connected:
@@ -586,7 +587,7 @@ int run(const Options& config,Logger& logger,Credentials* supplied=nullptr,Worke
                     break;
                 }
             }catch(const TransportError&) {
-                transport.reset();clear_exchange();logger.event("transport_lost");next=controller.transport_error(GetTickCount64());
+                transport.reset();clear_exchange();logger.event("transport_lost");append(controller.transport_error(GetTickCount64()));
             }
         }
         sync_state();

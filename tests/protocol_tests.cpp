@@ -41,20 +41,6 @@ int main() {
         auto corrupt=challenge;corrupt[16]=255;corrupt[17]=255;
         bool rejected=false;try{parse_frame(corrupt);}catch(const std::runtime_error&){rejected=true;}
         require(rejected,"Oversized EAPOL length must be rejected");
-        auto tagged=challenge;
-        tagged.insert(tagged.begin()+12,{0x88,0xa8,0,1,0x81,0,0,2});
-        const auto vlan=parse_frame(tagged);
-        require(vlan.source==md.source && vlan.destination==md.destination && vlan.method==4 &&
-                std::equal(vlan.eap.begin(),vlan.eap.end(),md.eap.begin(),md.eap.end()) &&
-                std::equal(vlan.trailing.begin(),vlan.trailing.end(),md.trailing.begin(),md.trailing.end()),
-                "Stacked VLAN tags preserve borrowed EAP and trailer boundaries");
-        const auto reject_frame=[](std::span<const Byte> packet) {
-            try { parse_frame(packet); } catch(const std::runtime_error&) { return true; }
-            return false;
-        };
-        require(reject_frame(std::span(tagged).first(21)),"Reject a truncated inner VLAN tag");
-        tagged[31]=0xff;
-        require(reject_frame(tagged),"Reject challenge size beyond the declared EAP length");
         auto tail=Bytes(id.trailing.begin(),id.trailing.end());tail[71]=255;
         rejected=false;try{parse_client_properties(tail);}catch(const std::runtime_error&){rejected=true;}
         require(rejected,"Invalid vendor length must be rejected");

@@ -1,0 +1,41 @@
+{
+  "product": "SCAU Link",
+  "version": "0.15.1",
+  "releaseChannel": "preview",
+  "previewReason": "回撤 0.15.0 的 Rust／NSH 迁移，恢复 0.14.5 原生实现，实网兼容性待复测",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-22T09:34:12.118420+00:00",
+  "automatedTests": {
+    "passed": 37,
+    "total": 37,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 4,
+    "total": 4,
+    "executedOnThisBuild": 4,
+    "method": "Synthetic native control interactions and result text.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "rollback": {
+    "restoredFrom": "v0.14.5-preview",
+    "supersedes": "v0.15.0-preview",
+    "authenticationBinaryMatches0145": true
+  },
+  "notVerified": [
+    "Live campus network authentication, self-service operations and long-running connectivity."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false,
+  "desktopSha256": "8b8c757c4041563cf37482dd5c1859cb688f89a489bde9bdbaed064813c2d4d9",
+  "authenticationSha256": "56ef07533fd51bba22899eb6628bd77dbdb24f4191f69a32de8665878066a204",
+  "updaterSha256": "8204253a147e5f07c8112dc5375bbbd881bcb11c3ab494b7d32b1ebc04a8cb66",
+  "installerChecks": {
+    "passed": 29,
+    "total": 29,
+    "qaOnly": true,
+    "productionRegistryChanged": false,
+    "settingsAndAccountsPreserved": true
+  }
+}

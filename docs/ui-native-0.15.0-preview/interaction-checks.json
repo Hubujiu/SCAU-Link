@@ -1,7 +1,0 @@
-[
-  {"name": "NSH login and native portal credential test in regular mode", "passed": true},
-  {"name": "NSH login and native portal credential test in mini mode", "passed": true},
-  {"name": "NSH billing and unconfirmed account display for simulated Web", "passed": true},
-  {"name": "NSH billing display for simulated wireless 802.1X", "passed": true},
-  {"name": "NSH mode selection, connect, disconnect and clean demo shutdown", "passed": true}
-]
