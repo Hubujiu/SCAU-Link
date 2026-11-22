@@ -1,0 +1,775 @@
+{
+  "windows": "10.0.22621.0",
+  "processor": "12th Gen Intel(R) Core(TM) i9-12900HX",
+  "desktopSha256": [
+    "0d0f4bd491b86d33bfba91a0fde22fb6ea15f15291bc63b3b155c74f0669ed1b",
+    "41303015239ce0785db7298b64bd235adab473e4a61464c0946750a43b00a75f"
+  ],
+  "desktopBytes": [
+    4122624,
+    12954112
+  ],
+  "runs": 10,
+  "samples": [
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 57.2711,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47218688,
+        "privateWorkingSetBytes": 12808192,
+        "privateCommitBytes": 57610240
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 187.7022,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61026304,
+        "privateWorkingSetBytes": 20570112,
+        "privateCommitBytes": 78249984
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 181.8,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61263872,
+        "privateWorkingSetBytes": 20787200,
+        "privateCommitBytes": 77733888
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 82.0015,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47112192,
+        "privateWorkingSetBytes": 12705792,
+        "privateCommitBytes": 56471552
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 48.5856,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47173632,
+        "privateWorkingSetBytes": 12763136,
+        "privateCommitBytes": 57020416
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 182.6352,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 60813312,
+        "privateWorkingSetBytes": 20488192,
+        "privateCommitBytes": 77991936
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 175.6139,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61005824,
+        "privateWorkingSetBytes": 20537344,
+        "privateCommitBytes": 78188544
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 51.9243,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47235072,
+        "privateWorkingSetBytes": 12816384,
+        "privateCommitBytes": 57835520
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 50.1815,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47267840,
+        "privateWorkingSetBytes": 12853248,
+        "privateCommitBytes": 57171968
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 171.8073,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 60669952,
+        "privateWorkingSetBytes": 20213760,
+        "privateCommitBytes": 77520896
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 170.8496,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 60575744,
+        "privateWorkingSetBytes": 20295680,
+        "privateCommitBytes": 76697600
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 53.7069,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47218688,
+        "privateWorkingSetBytes": 12791808,
+        "privateCommitBytes": 57577472
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 75.5485,
+        "idleCpuMsPerSecond": 11.89268708966424,
+        "workingSetBytes": 47226880,
+        "privateWorkingSetBytes": 12808192,
+        "privateCommitBytes": 57462784
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 216.3547,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 60588032,
+        "privateWorkingSetBytes": 20127744,
+        "privateCommitBytes": 76951552
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 180.0088,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61050880,
+        "privateWorkingSetBytes": 20586496,
+        "privateCommitBytes": 76296192
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 59.3675,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47161344,
+        "privateWorkingSetBytes": 12738560,
+        "privateCommitBytes": 55996416
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 51.2049,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47214592,
+        "privateWorkingSetBytes": 12787712,
+        "privateCommitBytes": 56606720
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 185.802,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 60846080,
+        "privateWorkingSetBytes": 20361216,
+        "privateCommitBytes": 76017664
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 1,
+      "result": {
+        "visibleMs": 185.2988,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61087744,
+        "privateWorkingSetBytes": 20606976,
+        "privateCommitBytes": 76292096
+      }
+    },
+    {
+      "workload": "--demo",
+      "version": 0,
+      "result": {
+        "visibleMs": 51.6839,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 47161344,
+        "privateWorkingSetBytes": 12738560,
+        "privateCommitBytes": 57335808
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 87.7927,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48476160,
+        "privateWorkingSetBytes": 12857344,
+        "privateCommitBytes": 57909248
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 220.0404,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 62013440,
+        "privateWorkingSetBytes": 20893696,
+        "privateCommitBytes": 77041664
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 184.2469,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 62128128,
+        "privateWorkingSetBytes": 21008384,
+        "privateCommitBytes": 78344192
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 54.4588,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48508928,
+        "privateWorkingSetBytes": 12902400,
+        "privateCommitBytes": 57413632
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 88.8586,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48205824,
+        "privateWorkingSetBytes": 12824576,
+        "privateCommitBytes": 57352192
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 182.4874,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 62087168,
+        "privateWorkingSetBytes": 20983808,
+        "privateCommitBytes": 77914112
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 217.6323,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61915136,
+        "privateWorkingSetBytes": 20799488,
+        "privateCommitBytes": 78946304
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 53.7202,
+        "idleCpuMsPerSecond": 11.92075888199532,
+        "workingSetBytes": 48635904,
+        "privateWorkingSetBytes": 12972032,
+        "privateCommitBytes": 57364480
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 62.1718,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48603136,
+        "privateWorkingSetBytes": 12976128,
+        "privateCommitBytes": 58286080
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 181.346,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61956096,
+        "privateWorkingSetBytes": 20807680,
+        "privateCommitBytes": 79101952
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 208.9047,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61784064,
+        "privateWorkingSetBytes": 20684800,
+        "privateCommitBytes": 78544896
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 54.998,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48566272,
+        "privateWorkingSetBytes": 12967936,
+        "privateCommitBytes": 58175488
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 63.1917,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48594944,
+        "privateWorkingSetBytes": 12967936,
+        "privateCommitBytes": 57901056
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 196.0507,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61870080,
+        "privateWorkingSetBytes": 20758528,
+        "privateCommitBytes": 77570048
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 169.5609,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61902848,
+        "privateWorkingSetBytes": 20779008,
+        "privateCommitBytes": 78340096
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 84.3867,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48631808,
+        "privateWorkingSetBytes": 12918784,
+        "privateCommitBytes": 56426496
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 55.7554,
+        "idleCpuMsPerSecond": 11.894964985029471,
+        "workingSetBytes": 48586752,
+        "privateWorkingSetBytes": 12967936,
+        "privateCommitBytes": 56836096
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 201.0199,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61620224,
+        "privateWorkingSetBytes": 20488192,
+        "privateCommitBytes": 77606912
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 1,
+      "result": {
+        "visibleMs": 202.7207,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 61603840,
+        "privateWorkingSetBytes": 20680704,
+        "privateCommitBytes": 77201408
+      }
+    },
+    {
+      "workload": "--demo-package",
+      "version": 0,
+      "result": {
+        "visibleMs": 52.5442,
+        "idleCpuMsPerSecond": 0.0,
+        "workingSetBytes": 48672768,
+        "privateWorkingSetBytes": 13033472,
+        "privateCommitBytes": 58081280
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.8051,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.6142,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.5731,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.8398,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.9402,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 12.0991,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 12.0191,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.9897,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 11.1413,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.6932,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.5417,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.7284,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.7548,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.5573,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.5691,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.4733,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 10.8284,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.5433,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 11.4803,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "parse",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 12.2144,
+        "checksum": 137493856
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 86.1548,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 51.7182,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 47.4847,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 86.2297,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 88.0383,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 49.7613,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 47.9341,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 81.7106,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 85.5951,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 48.2237,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 51.5973,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 85.3809,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 84.4056,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 48.2262,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 51.9167,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 89.0441,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 89.2695,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 49.2523,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 1,
+      "result": {
+        "nsPerIteration": 50.742,
+        "checksum": 4000001
+      }
+    },
+    {
+      "workload": "recovery",
+      "version": 0,
+      "result": {
+        "nsPerIteration": 88.3129,
+        "checksum": 4000001
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "product": "SCAU Link",
+  "version": "0.15.0",
+  "releaseChannel": "preview",
+  "previewReason": "连接页和有线认证部分已迁移到 Rust，实网兼容性尚待复测",
+  "platform": "Windows x64",
+  "builtAt": "2026-11-22T06:17:49.377261+00:00",
+  "automatedTests": {
+    "passed": 37,
+    "total": 37,
+    "evidence": "test-results.txt"
+  },
+  "nativeUiChecks": {
+    "status": "passed",
+    "passed": 5,
+    "total": 5,
+    "executedOnThisBuild": 5,
+    "method": "Windows UI Automation and Win32 control interactions with synthesized demo state.",
+    "evidence": "screenshots/interaction-checks.json"
+  },
+  "performance": {
+    "baseline": "v0.14.5-preview",
+    "runsPerVersionAndWorkload": 10,
+    "evidence": "source/docs/network-delivery-0.15.0/migration-benchmark.json"
+  },
+  "notVerified": [
+    "Live wired and wireless network authentication and reconnects.",
+    "Live school self-service login, pause/resume and password changes.",
+    "Long-running connected memory and CPU."
+  ],
+  "includedPrivateCaptures": false,
+  "includedCredentialsOrPrivateConfiguration": false,
+  "desktopSha256": "41303015239ce0785db7298b64bd235adab473e4a61464c0946750a43b00a75f",
+  "authenticationSha256": "60292a1caa83c1943498266fa3934c8a414039bdb276a084cf7ec443f4fa978c",
+  "updaterSha256": "a3a5a0847020c044fb54eae89c7b5dc257b0a1dbb10e70b06b9a8ba68fcba630",
+  "installerChecks": {
+    "passed": 29,
+    "total": 29,
+    "qaOnly": true,
+    "testDirectoryOnNonSystemDrive": true,
+    "applicationLaunched": false,
+    "realAuthenticationChanged": false,
+    "productionRegistryChanged": false,
+    "settingsAndAccountsPreserved": true,
+    "qaInstallerSha256": "faa7cf8091acdab33a12f96d892595588d98311ba987037e6082a795404739cf"
+  }
+}

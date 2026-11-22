@@ -19,6 +19,12 @@ The native UI includes vector paths from Lucide 0.468.0, matching the HTML
 design assets. Lucide is distributed under the ISC license. Its copyright
 and license notice are in third_party/lucide/LICENSE.
 
+The connection page embeds Longbridge Native Shell (NSH) 0.6.1 under the
+Apache License 2.0, https://github.com/longbridge/nsh/tree/2f51d8611677c8a6bbad937b39756e8d0cc45350.
+The Rust build pins this revision and the dependency source hashes in
+rust/Cargo.lock. The Windows build uses NSH's Rust API with its optional
+features disabled. Third-party Rust license notices are in third_party/rust.
+
 The application mark in assets/app-icon.svg is original project artwork,
 distributed under the project GPL-3.0 license; it is separate from Lucide.
 

@@ -2,11 +2,10 @@
 
 #include <cstdint>
 #include <optional>
-#include <vector>
 
 namespace scau {
 
-enum class RecoveryActionKind {
+enum class RecoveryActionKind : std::uint8_t {
     BeginExchange,
     RetryStart,
     ReopenTransport,
@@ -16,7 +15,7 @@ enum class RecoveryActionKind {
     Stopped
 };
 
-enum class RecoveryState {
+enum class RecoveryState : std::uint8_t {
     Idle,
     Connecting,
     Authenticating,
@@ -33,7 +32,7 @@ enum class RecoveryState {
     Stopped
 };
 
-enum class RecoveryReason {
+enum class RecoveryReason : std::uint8_t {
     None,
     NoServerResponse,
     TransientFailure,
@@ -54,7 +53,19 @@ struct RecoveryAction {
     std::optional<std::uint64_t> deadline_ms{};
 };
 
-using RecoveryActions = std::vector<RecoveryAction>;
+using RecoveryTransition = std::optional<RecoveryAction>;
+
+struct RecoveryRustState;
+// Layout shared with rust/core/src/recovery.rs. Snapshots let read-only queries
+// stay in the Windows worker and keep all transitions in Rust.
+struct RecoverySnapshot {
+    std::uint64_t deadline{}, generation{}, no_server_waits{}, successful_exchanges{}, reauth_interval{};
+    std::uint32_t start_attempts{}, backoff_attempts{}, transport_failures{};
+    RecoveryState state{};
+    RecoveryReason reason{};
+    std::uint8_t action{};
+    bool has_deadline{}, link_up{}, connected{}, reauth_pending{}, md5_seen{};
+};
 
 // Pure policy: no wall clock, credentials, Windows calls, packets, or logoff.
 // The caller supplies monotonic milliseconds and executes returned actions.
@@ -66,6 +77,11 @@ using RecoveryActions = std::vector<RecoveryAction>;
 // the original enabled that policy conditionally on its link-recovery flag.
 class RecoveryController {
 public:
+    RecoveryController();
+    ~RecoveryController();
+    RecoveryController(const RecoveryController&) = delete;
+    RecoveryController& operator=(const RecoveryController&) = delete;
+
     static constexpr std::uint64_t start_period_ms = 3000;
     static constexpr unsigned max_start_attempts = 3;
     static constexpr std::uint64_t response_timeout_ms = 9000;
@@ -75,75 +91,52 @@ public:
     static constexpr std::uint64_t transport_open_timeout_ms = 5000;
     static constexpr std::uint64_t max_transport_backoff_ms = 30000;
 
-    RecoveryActions start(std::uint64_t now, bool link_up);
-    RecoveryActions link_changed(std::uint64_t now, bool link_up);
-    RecoveryActions suspend(std::uint64_t now);
-    RecoveryActions resume(std::uint64_t now);
+    RecoveryTransition start(std::uint64_t now, bool link_up);
+    RecoveryTransition link_changed(std::uint64_t now, bool link_up);
+    RecoveryTransition suspend(std::uint64_t now);
+    RecoveryTransition resume(std::uint64_t now);
     // First Identity: 9 s; first validated MD5 before expiry: another 9 s once.
     // Direct MD5: 9 s. Duplicate/same-phase/regressive requests never extend it.
-    RecoveryActions request(std::uint64_t now, bool md5);
-    RecoveryActions success(std::uint64_t now, std::uint64_t reauth_interval_ms);
-    RecoveryActions failure(std::uint64_t now, bool has_reason);
+    RecoveryTransition request(std::uint64_t now, bool md5);
+    RecoveryTransition success(std::uint64_t now, std::uint64_t reauth_interval_ms);
+    RecoveryTransition failure(std::uint64_t now, bool has_reason);
     // A separately authenticated SAM termination remains terminal even after
     // the physical link/suspend state changes while its ACK is pending.
-    RecoveryActions server_terminated(std::uint64_t now);
-    RecoveryActions transport_error(std::uint64_t now);
-    RecoveryActions transport_ready(std::uint64_t now);
-    RecoveryActions tick(std::uint64_t now, unsigned jitter_0_19);
-    RecoveryActions stop(std::uint64_t now);
+    RecoveryTransition server_terminated(std::uint64_t now);
+    RecoveryTransition transport_error(std::uint64_t now);
+    RecoveryTransition transport_ready(std::uint64_t now);
+    RecoveryTransition tick(std::uint64_t now, unsigned jitter_0_19);
+    RecoveryTransition stop(std::uint64_t now);
 
-    [[nodiscard]] RecoveryState state() const noexcept { return state_; }
-    [[nodiscard]] RecoveryReason reason() const noexcept { return reason_; }
-    [[nodiscard]] std::optional<std::uint64_t> next_deadline_ms() const noexcept { return deadline_; }
-    [[nodiscard]] unsigned start_attempts() const noexcept { return start_attempts_; }
-    [[nodiscard]] unsigned backoff_attempts() const noexcept { return backoff_attempts_; }
-    [[nodiscard]] unsigned transport_failures() const noexcept { return transport_failures_; }
-    [[nodiscard]] std::uint64_t exchange_generation() const noexcept { return generation_; }
-    [[nodiscard]] std::uint64_t no_server_waits() const noexcept { return no_server_waits_; }
-    [[nodiscard]] std::uint64_t successful_exchanges() const noexcept { return successful_exchanges_; }
-    [[nodiscard]] std::uint64_t reauth_interval_ms() const noexcept { return reauth_interval_ms_; }
-    [[nodiscard]] bool link_up() const noexcept { return link_up_; }
+    [[nodiscard]] RecoveryState state() const noexcept { return snapshot_.state; }
+    [[nodiscard]] RecoveryReason reason() const noexcept { return snapshot_.reason; }
+    [[nodiscard]] std::optional<std::uint64_t> next_deadline_ms() const noexcept {
+        return snapshot_.has_deadline ? std::optional{snapshot_.deadline} : std::nullopt;
+    }
+    [[nodiscard]] unsigned start_attempts() const noexcept { return snapshot_.start_attempts; }
+    [[nodiscard]] unsigned backoff_attempts() const noexcept { return snapshot_.backoff_attempts; }
+    [[nodiscard]] unsigned transport_failures() const noexcept { return snapshot_.transport_failures; }
+    [[nodiscard]] std::uint64_t exchange_generation() const noexcept { return snapshot_.generation; }
+    [[nodiscard]] std::uint64_t no_server_waits() const noexcept { return snapshot_.no_server_waits; }
+    [[nodiscard]] std::uint64_t successful_exchanges() const noexcept { return snapshot_.successful_exchanges; }
+    [[nodiscard]] std::uint64_t reauth_interval_ms() const noexcept { return snapshot_.reauth_interval; }
+    [[nodiscard]] bool link_up() const noexcept { return snapshot_.link_up; }
     // Remains true during server-requested/periodic reauth until it fails or
     // times out, even though BeginExchange asks the caller to pause maintenance.
     // Only success() can first establish or re-establish this confirmation.
-    [[nodiscard]] bool connected() const noexcept { return connected_; }
-    [[nodiscard]] bool reauth_pending() const noexcept { return reauth_pending_; }
-    [[nodiscard]] bool md5_seen() const noexcept { return md5_seen_; }
-    [[nodiscard]] bool stopped() const noexcept { return state_ == RecoveryState::Stopped; }
+    [[nodiscard]] bool connected() const noexcept { return snapshot_.connected; }
+    [[nodiscard]] bool reauth_pending() const noexcept { return snapshot_.reauth_pending; }
+    [[nodiscard]] bool md5_seen() const noexcept { return snapshot_.md5_seen; }
+    [[nodiscard]] bool stopped() const noexcept { return state() == RecoveryState::Stopped; }
 
 private:
-    RecoveryState state_{RecoveryState::Idle};
-    RecoveryReason reason_{RecoveryReason::None};
-    std::optional<std::uint64_t> deadline_{};
-    std::optional<std::uint64_t> link_ready_at_{};
-    std::optional<std::uint64_t> resume_not_before_{};
-    std::uint64_t last_now_{};
-    std::uint64_t generation_{};
-    std::uint64_t no_server_waits_{};
-    std::uint64_t successful_exchanges_{};
-    std::uint64_t reauth_interval_ms_{};
-    unsigned start_attempts_{};
-    unsigned backoff_attempts_{};
-    unsigned transport_failures_{};
-    bool started_{};
-    bool link_up_{};
-    bool connected_{};
-    bool reauth_pending_{};
-    bool md5_seen_{};
-    bool reopen_needed_{};
-
-    std::uint64_t observe_time(std::uint64_t now) noexcept;
-    [[nodiscard]] bool terminal() const noexcept;
-    [[nodiscard]] bool accepts_packet() const noexcept;
-    void clear_session() noexcept;
-    RecoveryActions wait(RecoveryState state, RecoveryReason reason,
-                         std::optional<std::uint64_t> deadline = {});
-    RecoveryActions begin_exchange(std::uint64_t now,
-                                   RecoveryReason reason = RecoveryReason::None);
-    RecoveryActions reopen_transport(std::uint64_t now);
-    RecoveryActions transient_failure(std::uint64_t now);
-    RecoveryActions schedule_transport_retry(std::uint64_t now);
-    RecoveryActions reject(RecoveryReason reason);
+    enum class Operation : std::uint8_t {
+        Start, LinkChanged, Suspend, Resume, Request, Success, Failure,
+        ServerTerminated, TransportError, TransportReady, Tick, Stop
+    };
+    RecoveryRustState* rust_;
+    RecoverySnapshot snapshot_;
+    RecoveryTransition step(Operation operation, std::uint64_t now, std::uint64_t argument = 0);
 };
 
 const char* recovery_state_name(RecoveryState state) noexcept;

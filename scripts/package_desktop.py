@@ -56,6 +56,10 @@ assert struct.unpack_from('<H', binary, pe + 24 + 68)[0] == 2
 for name in ['LICENSE', 'THIRD_PARTY_NOTICES.md']:
     shutil.copy2(root / name, stage / name)
 source_files = [root / name for name in ['CMakeLists.txt', 'LICENSE', 'THIRD_PARTY_NOTICES.md']]
+source_files.extend(root / 'rust' / name for name in ['Cargo.toml', 'Cargo.lock'])
+source_files.extend((root / 'rust').glob('*/Cargo.toml'))
+for crate_source in (root / 'rust').glob('*/src'):
+    source_files.extend(crate_source.rglob('*.rs'))
 for folder in ['src', 'tests', 'scripts', 'installer', 'third_party', 'assets']:
     source_files.extend(p for p in (root / folder).rglob('*') if p.is_file()
                         and '__pycache__' not in p.parts
@@ -95,14 +99,14 @@ for path in source_files:
     assert sha(path) == sha(target), f'Source snapshot mismatch: {path}'
 (stage / 'source/README.md').write_text(
     f'# SCAU Link {version} source\n\n'
-    'Build with Visual Studio 2022 Build Tools, Windows SDK, CMake and Python 3.12+. '
+    'Build with Visual Studio 2022 Build Tools, Windows SDK, Rust MSVC 1.97+, CMake and Python 3.12+. '
     'Run `scripts/build.ps1 -Configuration Release`.\n\n'
     'The bootstrap verifies the bundled OpenSSL 3.5.9 source and downloads a '
     'checksum-pinned portable Perl build tool on the first run. Static TLS libraries '
     'are built locally in build/deps; Perl is not installed system-wide or used at runtime. '
     'Source provenance and licensing are in third_party/openssl.\n\n'
     'Keep SCAU-Link.exe, scau-auth.exe and scau-update.exe together. '
-    'The native UI uses Win32, Direct2D and DirectWrite; no web runtime is needed. '
+    'The connection page uses Native Shell with Win32, Direct2D and DirectWrite. '
     'Vector icon paths are compiled from src/desktop/icons.hpp. '
     'Optional icon regeneration uses scripts/generate_native_icons.py and Python fontTools. '
     'The application SVG master is assets/app-icon.svg; regenerating the bundled ICO files '

@@ -1,6 +1,7 @@
 /captures/
 __pycache__/
 /build/
+/rust/target/
 /out/
 *.pcap
 *.pcapng
@@ -98,3 +99,12 @@ settings.ini
 !/docs/ui-native-0.14.5-preview/
 /docs/ui-native-0.14.5-preview/*
 !/docs/ui-native-0.14.5-preview/interaction-checks.json
+!/docs/SCAU-First-Run-0.15.0.md
+!/docs/Network-Delivery-Results-0.15.0.md
+!/docs/validation-0.15.0.json
+!/docs/network-delivery-0.15.0/
+/docs/network-delivery-0.15.0/*
+!/docs/network-delivery-0.15.0/migration-benchmark.json
+!/docs/ui-native-0.15.0-preview/
+/docs/ui-native-0.15.0-preview/*
+!/docs/ui-native-0.15.0-preview/interaction-checks.json

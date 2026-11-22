@@ -23,6 +23,11 @@ jobs:
             build/deps/openssl-install
             build/deps/strawberry-perl-5.42.3.1
           key: windows-2022-native-tls-${{ hashFiles('third_party/openssl/provenance.json', 'scripts/build_openssl.py') }}
+      - name: Install Rust MSVC toolchain
+        shell: pwsh
+        run: rustup toolchain install 1.99.1-x86_64-pc-windows-msvc --profile minimal
       - name: Build and run offline checks
+        env:
+          RUSTUP_TOOLCHAIN: 1.99.1-x86_64-pc-windows-msvc
         shell: pwsh
         run: ./scripts/build.ps1 -Configuration Release
